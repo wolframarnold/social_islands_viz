@@ -32,6 +32,7 @@ import org.gephi.graph.api.GraphView;
 import org.gephi.graph.api.Node;
 import org.gephi.graph.api.UndirectedGraph;
 import org.gephi.io.exporter.api.ExportController;
+import org.gephi.io.exporter.spi.GraphExporter;
 import org.gephi.io.generator.plugin.RandomGraph;
 import org.gephi.io.importer.api.Container;
 import org.gephi.io.importer.api.ContainerFactory;
@@ -94,8 +95,9 @@ public class App
     private static GraphModel graphModel;
     private static UndirectedGraph undirectedGraph;
     
-    private static void mongoDB2Graph()  throws Exception{
+    private static void mongoDB2Graph(String fbName)  throws Exception{
         pc = Lookup.getDefault().lookup(ProjectController.class);
+        
         pc.newProject();
         workspace = pc.getCurrentWorkspace();
 
@@ -109,7 +111,8 @@ public class App
         DBCollection users = db.getCollection("users");
         
         BasicDBObject query = new BasicDBObject();
-        query.put("name", "Wolfram Arnold");
+        //query.put("name", "Wolfram Arnold");
+        query.put("name", fbName);
         query.put("provider", "facebook");
         DBCursor cursor = users.find(query);
 
@@ -184,7 +187,7 @@ public class App
         }
             
         for (int i1 = 0; i1< friends.size(); i1++){
-            Edge e2 = graphModel.factory().newEdge(nego, nodes[i1]);
+            Edge e2 = graphModel.factory().newEdge(nodes[i1], nego);
             undirectedGraph.addEdge(e2);
         }
         
@@ -215,7 +218,7 @@ public class App
         
     }
     
-    private static void genNExportGraph() {
+    private static void genGraph() {
         AttributeModel attributeModel = Lookup.getDefault().lookup(AttributeController.class).getModel();
         PreviewModel model = Lookup.getDefault().lookup(PreviewController.class).getModel();
         FilterController filterController = Lookup.getDefault().lookup(FilterController.class);
@@ -293,22 +296,47 @@ public class App
         nodeColorTransformer2.randomizeColors(p2);
         partitionController.transform(p2, nodeColorTransformer2);
        
-        //Export
+        
+        
+        
+    }
+    
+    
+    private static void exportGraph() {
+         //Export
+//        ExportController ec = Lookup.getDefault().lookup(ExportController.class);
+//        try {
+//            ec.exportFile(new File("fb_simple_wolf.svg"));
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//            return;
+//        }
+//        
+
+        //Export only visible graph
+        
         ExportController ec = Lookup.getDefault().lookup(ExportController.class);
+        GraphExporter exporter = (GraphExporter) ec.getExporter("gexf");     //Get GEXF exporter
+        exporter.setExportVisible(true);  //Only exports the visible (filtered) graph
+        exporter.setWorkspace(workspace);
         try {
-            ec.exportFile(new File("fb_simple_wolf.svg"));
+            ec.exportFile(new File("../trust_exchange/public/test2.gexf"), exporter);
         } catch (IOException ex) {
             ex.printStackTrace();
             return;
         }
+
+       
     }
     
     public static void main(String[] args) throws Exception {
         //Init a project - and therefore a workspace
-        mongoDB2Graph();
+        mongoDB2Graph("Weidong Yang");
         
         System.out.println("From formed graph, Nodes: "+undirectedGraph.getNodeCount()+" Edges: "+undirectedGraph.getEdgeCount());
 
-        genNExportGraph();
+        genGraph();
+        
+        exportGraph();
     }
 }
