@@ -16,16 +16,37 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.gephi.data.attributes.api.*;
-import org.gephi.filters.api.*;
-import org.gephi.filters.plugin.graph.DegreeRangeBuilder.*;
-import org.gephi.graph.api.*;
-import org.gephi.io.exporter.api.*;
-import org.gephi.layout.plugin.*;
-import org.gephi.layout.plugin.force.*;
-import org.gephi.layout.plugin.force.yifanHu.*;
-import org.gephi.layout.plugin.forceAtlas.*;
-import org.gephi.preview.api.*;
+import org.gephi.data.attributes.api.AttributeColumn;
+import org.gephi.data.attributes.api.AttributeController;
+import org.gephi.data.attributes.api.AttributeModel;
+import org.gephi.filters.api.FilterController;
+import org.gephi.filters.api.Query;
+import org.gephi.filters.api.Range;
+import org.gephi.filters.plugin.graph.DegreeRangeBuilder.DegreeRangeFilter;
+import org.gephi.graph.api.DirectedGraph;
+import org.gephi.graph.api.Edge;
+import org.gephi.graph.api.GraphController;
+import org.gephi.graph.api.GraphModel;
+import org.gephi.graph.api.GraphView;
+import org.gephi.graph.api.Node;
+import org.gephi.graph.api.UndirectedGraph;
+import org.gephi.io.exporter.api.ExportController;
+import org.gephi.io.exporter.spi.GraphExporter;
+import org.gephi.io.generator.plugin.RandomGraph;
+import org.gephi.io.importer.api.Container;
+import org.gephi.io.importer.api.ContainerFactory;
+import org.gephi.io.importer.api.EdgeDefault;
+import org.gephi.io.importer.api.ImportController;
+import org.gephi.io.processor.plugin.DefaultProcessor;
+import org.gephi.layout.plugin.AutoLayout;
+import org.gephi.layout.plugin.force.StepDisplacement;
+import org.gephi.layout.plugin.force.yifanHu.YifanHuLayout;
+import org.gephi.layout.plugin.forceAtlas.ForceAtlasLayout;
+import org.gephi.layout.plugin.forceAtlas2.ForceAtlas2;
+import org.gephi.layout.plugin.forceAtlas2.ForceAtlas2Builder;
+import org.gephi.preview.api.PreviewController;
+import org.gephi.preview.api.PreviewModel;
+import org.gephi.preview.api.PreviewProperty;
 import org.gephi.preview.types.EdgeColor;
 import org.gephi.project.api.*;
 import org.gephi.ranking.api.*;
@@ -75,6 +96,7 @@ public class App implements Runnable
     
     private void mongoDB2Graph()  throws Exception {
         pc = Lookup.getDefault().lookup(ProjectController.class);
+        
         pc.newProject();
         workspace = pc.getCurrentWorkspace();
 
@@ -146,7 +168,7 @@ public class App implements Runnable
         }
             
         for (int i1 = 0; i1< friends.size(); i1++){
-            Edge e2 = graphModel.factory().newEdge(nego, nodes[i1]);
+            Edge e2 = graphModel.factory().newEdge(nodes[i1], nego);
             undirectedGraph.addEdge(e2);
         }
         
@@ -176,13 +198,13 @@ public class App implements Runnable
         
     }
     
-    private void genNExportGraph() {
+    private void genGraph() {
         AttributeModel attributeModel = Lookup.getDefault().lookup(AttributeController.class).getModel();
         PreviewModel model = Lookup.getDefault().lookup(PreviewController.class).getModel();
         FilterController filterController = Lookup.getDefault().lookup(FilterController.class);
         RankingController rankingController = Lookup.getDefault().lookup(RankingController.class); 
         
-        System.out.println("inside genNExportGraph, Nodes: " + undirectedGraph.getNodeCount());
+        System.out.println("inside genGraph, Nodes: " + undirectedGraph.getNodeCount());
         System.out.println("Edges: " + undirectedGraph.getEdgeCount());
 
         //Filter      
@@ -254,14 +276,37 @@ public class App implements Runnable
         nodeColorTransformer2.randomizeColors(p2);
         partitionController.transform(p2, nodeColorTransformer2);
        
-        //Export
+        
+        
+        
+    }
+    
+    
+    private void exportGraph() {
+         //Export
+//        ExportController ec = Lookup.getDefault().lookup(ExportController.class);
+//        try {
+//            ec.exportFile(new File("fb_simple_wolf.svg"));
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//            return;
+//        }
+//        
+
+        //Export only visible graph
+        
         ExportController ec = Lookup.getDefault().lookup(ExportController.class);
+        GraphExporter exporter = (GraphExporter) ec.getExporter("gexf");     //Get GEXF exporter
+        exporter.setExportVisible(true);  //Only exports the visible (filtered) graph
+        exporter.setWorkspace(workspace);
         try {
-            ec.exportFile(new File("fb_simple_wolf.svg"));
+            ec.exportFile(new File("../trust_exchange/public/graph.gexf"), exporter);
         } catch (IOException ex) {
             ex.printStackTrace();
             return;
         }
+
+       
     }
     
     public void run() {
@@ -276,7 +321,9 @@ public class App implements Runnable
         
         System.out.println("From formed graph, Nodes: "+undirectedGraph.getNodeCount()+" Edges: "+undirectedGraph.getEdgeCount());
 
-        genNExportGraph();
+        genGraph();
+        
+        exportGraph();
     }
     
     private final String user_id;
