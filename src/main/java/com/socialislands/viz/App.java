@@ -1,67 +1,46 @@
 package com.socialislands.viz;
 
-import com.mongodb.Mongo;
-import com.mongodb.DBCollection;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.DBCursor;
-import com.mongodb.DB;
-import com.mongodb.BasicDBList;
+import com.mongodb.*;
 import org.bson.types.ObjectId;
 
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.FileWriter;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.gephi.data.attributes.api.AttributeColumn;
-import org.gephi.data.attributes.api.AttributeController;
-import org.gephi.data.attributes.api.AttributeModel;
-import org.gephi.filters.api.FilterController;
-import org.gephi.filters.api.Query;
-import org.gephi.filters.api.Range;
-import org.gephi.filters.plugin.graph.DegreeRangeBuilder.DegreeRangeFilter;
-import org.gephi.graph.api.DirectedGraph;
-import org.gephi.graph.api.Edge;
-import org.gephi.graph.api.GraphController;
-import org.gephi.graph.api.GraphModel;
-import org.gephi.graph.api.GraphView;
-import org.gephi.graph.api.Node;
-import org.gephi.graph.api.UndirectedGraph;
-import org.gephi.io.exporter.api.ExportController;
-import org.gephi.io.generator.plugin.RandomGraph;
-import org.gephi.io.importer.api.Container;
-import org.gephi.io.importer.api.ContainerFactory;
-import org.gephi.io.importer.api.EdgeDefault;
-import org.gephi.io.importer.api.ImportController;
-import org.gephi.io.processor.plugin.DefaultProcessor;
-import org.gephi.layout.plugin.AutoLayout;
-import org.gephi.layout.plugin.force.StepDisplacement;
-import org.gephi.layout.plugin.force.yifanHu.YifanHuLayout;
-import org.gephi.layout.plugin.forceAtlas.ForceAtlasLayout;
-import org.gephi.layout.plugin.forceAtlas2.ForceAtlas2;
-import org.gephi.layout.plugin.forceAtlas2.ForceAtlas2Builder;
-import org.gephi.preview.api.PreviewController;
-import org.gephi.preview.api.PreviewModel;
-import org.gephi.preview.api.PreviewProperty;
+import org.gephi.data.attributes.api.*;
+import org.gephi.filters.api.*;
+import org.gephi.filters.plugin.graph.DegreeRangeBuilder.*;
+import org.gephi.graph.api.*;
+import org.gephi.io.exporter.api.*;
+import org.gephi.layout.plugin.*;
+import org.gephi.layout.plugin.force.*;
+import org.gephi.layout.plugin.force.yifanHu.*;
+import org.gephi.layout.plugin.forceAtlas.*;
+import org.gephi.preview.api.*;
 import org.gephi.preview.types.EdgeColor;
-import org.gephi.project.api.ProjectController;
-import org.gephi.project.api.Workspace;
-import org.gephi.ranking.api.Ranking;
-import org.gephi.ranking.api.RankingController;
-import org.gephi.ranking.api.Transformer;
-import org.gephi.ranking.plugin.transformer.AbstractColorTransformer;
-import org.gephi.ranking.plugin.transformer.AbstractSizeTransformer;
-import org.gephi.partition.api.Partition;
-import org.gephi.partition.api.PartitionController;
+import org.gephi.project.api.*;
+import org.gephi.ranking.api.*;
+import org.gephi.ranking.plugin.transformer.*;
+import org.gephi.partition.api.*;
 import org.gephi.partition.plugin.NodeColorTransformer;
-import org.gephi.statistics.plugin.GraphDistance;
-import org.gephi.statistics.plugin.Modularity;
+import org.gephi.statistics.plugin.*;
 
 import org.openide.util.Lookup;
+
+import net.greghaines.jesque.*;
+import net.greghaines.jesque.worker.*;
+import net.greghaines.jesque.client.*;
+import static net.greghaines.jesque.utils.JesqueUtils.*;
+
 
 /**
  *
@@ -87,14 +66,14 @@ class JavaEdge{
     
 }
 
-public class App 
+public class App implements Runnable
 {
     private static ProjectController pc;
     private static Workspace workspace;
     private static GraphModel graphModel;
     private static UndirectedGraph undirectedGraph;
     
-    private static void mongoDB2Graph()  throws Exception{
+    private void mongoDB2Graph()  throws Exception {
         pc = Lookup.getDefault().lookup(ProjectController.class);
         pc.newProject();
         workspace = pc.getCurrentWorkspace();
@@ -106,33 +85,16 @@ public class App
         Mongo m = new Mongo();
         DB db = m.getDB("trust_exchange_development");
         
-        DBCollection users = db.getCollection("users");
-        
-        BasicDBObject query = new BasicDBObject();
-        query.put("name", "Wolfram Arnold");
-        query.put("provider", "facebook");
-        DBCursor cursor = users.find(query);
-
-        
-        DBObject user = cursor.next();
-        
-        Map doc = user.toMap();
-
-        
-        ObjectId user_id = (ObjectId) doc.get("_id");
         DBCollection fb_profiles = db.getCollection("facebook_profiles");
         
-        query.clear();
-        query.put("user_id",user_id);
+        BasicDBObject query = new BasicDBObject();
+        query.put("user_id", new ObjectId(this.user_id));
         
-        cursor = fb_profiles.find(query);
+        DBCursor cursor = fb_profiles.find(query);
         
         DBObject fb_profile = cursor.next();
         
-//        ArrayList friends = fb_profile.get("friends");
         BasicDBList friends = (BasicDBList) fb_profile.get("friends");
-        System.out.println(friends.toArray()[0].getClass().getName());
-        
         
         JavaFriend[] javaFriends = new JavaFriend[friends.size()];
         Node[] nodes = new Node[friends.size()];
@@ -191,7 +153,6 @@ public class App
         long int1 = Long.valueOf(edge.get("uid1").toString());
         long int2 = Long.valueOf(edge.get("uid2").toString());
         
-//        int int2 = edge.get("uid2");
         System.err.println(int1);
         System.err.println(int2);
         
@@ -215,7 +176,7 @@ public class App
         
     }
     
-    private static void genNExportGraph() {
+    private void genNExportGraph() {
         AttributeModel attributeModel = Lookup.getDefault().lookup(AttributeController.class).getModel();
         PreviewModel model = Lookup.getDefault().lookup(PreviewController.class).getModel();
         FilterController filterController = Lookup.getDefault().lookup(FilterController.class);
@@ -303,12 +264,40 @@ public class App
         }
     }
     
-    public static void main(String[] args) throws Exception {
+    public void run() {
+
         //Init a project - and therefore a workspace
-        mongoDB2Graph();
+        try {
+            mongoDB2Graph();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return;
+        }
         
         System.out.println("From formed graph, Nodes: "+undirectedGraph.getNodeCount()+" Edges: "+undirectedGraph.getEdgeCount());
 
         genNExportGraph();
     }
+    
+    private final String user_id;
+    
+    public App(final String s) {
+            this.user_id = s;
+    }
+    
+    public static void main(String[] args) throws Exception {
+        final Config config = new ConfigBuilder().build();
+
+        final Worker worker = new WorkerImpl(config,
+                Arrays.asList("viz"), 
+                map(entry("com.socialislands.viz.VizWorker", App.class)));
+
+        final Thread t = new Thread(worker);
+        t.start();
+        //Thread.yield();
+        // loop til some exit condition
+//        worker.end(false);
+        t.join();
+    }
+
 }
