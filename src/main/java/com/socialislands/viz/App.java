@@ -4,10 +4,8 @@ import com.mongodb.*;
 import org.bson.types.ObjectId;
 
 import java.awt.Color;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.FileWriter;
+import java.io.*;
+import java.net.UnknownHostException;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
@@ -61,6 +59,7 @@ import net.greghaines.jesque.*;
 import net.greghaines.jesque.worker.*;
 import net.greghaines.jesque.client.*;
 import static net.greghaines.jesque.utils.JesqueUtils.*;
+import org.gephi.io.exporter.spi.CharacterExporter;
 
 
 /**
@@ -89,10 +88,13 @@ class JavaEdge{
 
 public class App implements Runnable
 {
-    private static ProjectController pc;
-    private static Workspace workspace;
-    private static GraphModel graphModel;
-    private static UndirectedGraph undirectedGraph;
+    private ProjectController pc;
+    private Workspace workspace;
+    private GraphModel graphModel;
+    private UndirectedGraph undirectedGraph;
+    private String user_id;
+    private DBObject fb_profile;         
+    private DBCollection fb_profiles;
     
     private void mongoDB2Graph()  throws Exception {
         pc = Lookup.getDefault().lookup(ProjectController.class);
@@ -104,19 +106,7 @@ public class App implements Runnable
         graphModel = Lookup.getDefault().lookup(GraphController.class).getModel();
         undirectedGraph = graphModel.getUndirectedGraph();
         
-        Mongo m = new Mongo();
-        DB db = m.getDB("trust_exchange_development");
-        
-        DBCollection fb_profiles = db.getCollection("facebook_profiles");
-        
-        BasicDBObject query = new BasicDBObject();
-        query.put("user_id", new ObjectId(this.user_id));
-        
-        DBCursor cursor = fb_profiles.find(query);
-        
-        DBObject fb_profile = cursor.next();
-        
-        BasicDBList friends = (BasicDBList) fb_profile.get("friends");
+        BasicDBList friends = (BasicDBList) this.fb_profile.get("friends");
         
         JavaFriend[] javaFriends = new JavaFriend[friends.size()];
         Node[] nodes = new Node[friends.size()];
@@ -147,7 +137,7 @@ public class App implements Runnable
         System.out.println(friend.get("uid"));
         System.out.println(friends.size());
         
-        BasicDBList edges = (BasicDBList) fb_profile.get("edges");
+        BasicDBList edges = (BasicDBList) this.fb_profile.get("edges");
         System.out.println(edges.toArray()[0].getClass().getName());
         
         itr = edges.iterator(); 
@@ -179,23 +169,6 @@ public class App implements Runnable
         System.err.println(int2);
         
         System.out.println(edges.size());
-        
-        
-//        for(BasicDBObject f : friends){
-//            
-//        }
-        
-//        System.out.println(fb_profile.get("friends"));
-//        System.out.println(fb_profile.get("friends").getClass().getName());
-//        edges = fb_profile.get("edges");
-//        System.out.println(edges);
-//        
-//        Set<String> colls = db.getCollectionNames();
-//        for (String s : colls){
-//            System.out.println(s);
-//        }
-        // TODO code application logic here
-        
     }
     
     private void genGraph() {
@@ -215,14 +188,13 @@ public class App implements Runnable
         GraphView view = filterController.filter(query);
         graphModel.setVisibleView(view);    //Set the filter result as the visible view
 
-                //See visible graph stats
+        //See visible graph stats
         UndirectedGraph graphVisible = graphModel.getUndirectedGraphVisible();
         System.out.println("After Filtering, Nodes: " + graphVisible.getNodeCount());
         System.out.println("Edges: " + graphVisible.getEdgeCount());
 
         
         //Layout for 1 minute
-                //Layout for 1 minute
         AutoLayout autoLayout = new AutoLayout(10, TimeUnit.SECONDS);
         autoLayout.setGraphModel(graphModel);
         YifanHuLayout firstLayout = new YifanHuLayout(null, new StepDisplacement(1f));
@@ -233,18 +205,18 @@ public class App implements Runnable
         autoLayout.addLayout(secondLayout, 0.9f, new AutoLayout.DynamicProperty[]{adjustBySizeProperty, repulsionProperty});
         autoLayout.execute();
 
-                //Get Centrality
+        //Get Centrality
         GraphDistance distance = new GraphDistance();
         distance.setDirected(false);
         distance.execute(graphModel, attributeModel);
 
-                //Rank color by Degree
+        //Rank color by Degree
         Ranking degreeRanking = rankingController.getModel().getRanking(Ranking.NODE_ELEMENT, Ranking.DEGREE_RANKING);
         AbstractColorTransformer colorTransformer = (AbstractColorTransformer) rankingController.getModel().getTransformer(Ranking.NODE_ELEMENT, Transformer.RENDERABLE_COLOR);
         colorTransformer.setColors(new Color[]{new Color(0xFEF0D9), new Color(0xB30000)});
         rankingController.transform(degreeRanking,colorTransformer);
 
-                //Rank size by centrality
+        //Rank size by centrality
         AttributeColumn centralityColumn = attributeModel.getNodeTable().getColumn(GraphDistance.BETWEENNESS);
         Ranking centralityRanking = rankingController.getModel().getRanking(Ranking.NODE_ELEMENT, centralityColumn.getId());
         AbstractSizeTransformer sizeTransformer = (AbstractSizeTransformer) rankingController.getModel().getTransformer(Ranking.NODE_ELEMENT, Transformer.RENDERABLE_SIZE);
@@ -252,7 +224,7 @@ public class App implements Runnable
         sizeTransformer.setMaxSize(20);
         rankingController.transform(centralityRanking,sizeTransformer);
 
-                //Preview
+        //Preview
         model.getProperties().putValue(PreviewProperty.SHOW_NODE_LABELS, Boolean.TRUE);
         model.getProperties().putValue(PreviewProperty.EDGE_COLOR, new EdgeColor(Color.GRAY));
         model.getProperties().putValue(PreviewProperty.EDGE_THICKNESS, new Float(0.1f));
@@ -264,21 +236,17 @@ public class App implements Runnable
         //nodeColorTransformer.randomizeColors(p);
         //partitionController.transform(p, nodeColorTransformer);
         
-                //Run modularity algorithm - community detection
+        //Run modularity algorithm - community detection
         Modularity modularity = new Modularity();
         modularity.execute(graphModel, attributeModel);
 
-                //Partition with 'modularity_class', just created by Modularity algorithm
+        //Partition with 'modularity_class', just created by Modularity algorithm
         AttributeColumn modColumn = attributeModel.getNodeTable().getColumn(Modularity.MODULARITY_CLASS);
         Partition p2 = partitionController.buildPartition(modColumn, undirectedGraph);
         System.out.println(p2.getPartsCount() + " partitions found");
         NodeColorTransformer nodeColorTransformer2 = new NodeColorTransformer();
         nodeColorTransformer2.randomizeColors(p2);
         partitionController.transform(p2, nodeColorTransformer2);
-       
-        
-        
-        
     }
     
     
@@ -293,20 +261,28 @@ public class App implements Runnable
 //        }
 //        
 
-        //Export only visible graph
+        //Export only visible graph -- to string buffer, then to Mongo as "graph" attribute on Facebook profile record.
         
         ExportController ec = Lookup.getDefault().lookup(ExportController.class);
         GraphExporter exporter = (GraphExporter) ec.getExporter("gexf");     //Get GEXF exporter
         exporter.setExportVisible(true);  //Only exports the visible (filtered) graph
         exporter.setWorkspace(workspace);
-        try {
-            ec.exportFile(new File("../trust_exchange/public/graph.gexf"), exporter);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return;
-        }
+        StringWriter stringWriter = new StringWriter();
+        ec.exportWriter(stringWriter, (CharacterExporter)exporter);
+        String result = stringWriter.toString();
+        
+        BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
+        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("graph", result));
+ 
+	this.fb_profiles.update(query, updateCmd);
 
-       
+//        GraphExporter exporter = (GraphExporter) ec.getExporter("gexf");     //Get GEXF exporter
+//        try {
+//            ec.exportFile(new File("../trust_exchange/public/graph.gexf"), exporter);
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//            return;
+//        }
     }
     
     public void run() {
@@ -326,10 +302,20 @@ public class App implements Runnable
         exportGraph();
     }
     
-    private final String user_id;
-    
-    public App(final String s) {
-            this.user_id = s;
+    public App(final String s) throws UnknownHostException {
+        this.user_id = s;
+        
+        Mongo m = new Mongo();
+        DB db = m.getDB("trust_exchange_development");
+        
+        this.fb_profiles = db.getCollection("facebook_profiles");
+        
+        BasicDBObject query = new BasicDBObject();
+        query.put("user_id", new ObjectId(this.user_id));
+        
+        DBCursor cursor = fb_profiles.find(query);
+        
+        this.fb_profile = cursor.next();
     }
     
     public static void main(String[] args) throws Exception {
@@ -342,8 +328,7 @@ public class App implements Runnable
         final Thread t = new Thread(worker);
         t.start();
         //Thread.yield();
-        // loop til some exit condition
-//        worker.end(false);
+        //worker.end(false);
         t.join();
     }
 
