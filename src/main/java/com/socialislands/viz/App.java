@@ -211,17 +211,19 @@ public class App implements Runnable
         distance.execute(graphModel, attributeModel);
 
         //Rank color by Degree
-        Ranking degreeRanking = rankingController.getModel().getRanking(Ranking.NODE_ELEMENT, Ranking.DEGREE_RANKING);
-        AbstractColorTransformer colorTransformer = (AbstractColorTransformer) rankingController.getModel().getTransformer(Ranking.NODE_ELEMENT, Transformer.RENDERABLE_COLOR);
-        colorTransformer.setColors(new Color[]{new Color(0xFEF0D9), new Color(0xB30000)});
-        rankingController.transform(degreeRanking,colorTransformer);
+//        Ranking degreeRanking = rankingController.getModel().getRanking(Ranking.NODE_ELEMENT, Ranking.DEGREE_RANKING);
+//        AbstractColorTransformer colorTransformer = (AbstractColorTransformer) rankingController.getModel().getTransformer(Ranking.NODE_ELEMENT, Transformer.RENDERABLE_COLOR);
+//        colorTransformer.setColors(new Color[]{new Color(0xFEF0D9), new Color(0xB30000)});
+//        rankingController.transform(degreeRanking,colorTransformer);
 
         //Rank size by centrality
         AttributeColumn centralityColumn = attributeModel.getNodeTable().getColumn(GraphDistance.BETWEENNESS);
         Ranking centralityRanking = rankingController.getModel().getRanking(Ranking.NODE_ELEMENT, centralityColumn.getId());
+   
         AbstractSizeTransformer sizeTransformer = (AbstractSizeTransformer) rankingController.getModel().getTransformer(Ranking.NODE_ELEMENT, Transformer.RENDERABLE_SIZE);
         sizeTransformer.setMinSize(6);
         sizeTransformer.setMaxSize(20);
+        rankingController.setInterpolator(Interpolator.newBezierInterpolator(new Float(0.01), new Float(1.0), new Float(0.0), new Float(1.0)));
         rankingController.transform(centralityRanking,sizeTransformer);
 
         //Preview
@@ -278,7 +280,13 @@ public class App implements Runnable
 
 //        GraphExporter exporter = (GraphExporter) ec.getExporter("gexf");     //Get GEXF exporter
 //        try {
-//            ec.exportFile(new File("../trust_exchange/public/graph.gexf"), exporter);
+//            ec.exportFile(new File("../../Sites/raphv-gexf-js/graph.gexf"), exporter);
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//            return;
+//        }
+//        try {
+//            ec.exportFile(new File("../social_islands/public/graph.svg"));
 //        } catch (IOException ex) {
 //            ex.printStackTrace();
 //            return;
@@ -316,15 +324,19 @@ public class App implements Runnable
         DBCursor cursor = fb_profiles.find(query);
         
         this.fb_profile = cursor.next();
+//        run();
     }
     
     public static void main(String[] args) throws Exception {
-        final Config config = new ConfigBuilder().build();
+
+//        App app = new App("4f63c7633f033175fe000007");
+                final Config config = new ConfigBuilder().build();
 
         final Worker worker = new WorkerImpl(config,
                 Arrays.asList("viz"), 
                 map(entry("com.socialislands.viz.VizWorker", App.class)));
 
+        
         final Thread t = new Thread(worker);
         t.start();
         //Thread.yield();
