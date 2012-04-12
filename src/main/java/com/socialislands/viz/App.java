@@ -340,6 +340,12 @@ public class App implements Runnable
         double medianb = stat.getPercentile(50);
         System.out.println("total nodes:" + numItem + ", average degreeb: " + meanb+", stdb: " + stdb + "median: "+medianb);
         
+        BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
+        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("averageDegree", meanb));
+	this.fb_profiles.update(query, updateCmd);
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("stdDegree", stdb));
+	this.fb_profiles.update(query, updateCmd);
+
         
          try{
             // Create file 
@@ -371,6 +377,9 @@ public class App implements Runnable
          int height = 300;
          try{
             ChartUtilities.saveChartAsPNG(new File("hist.png"), chart, width, height);
+//             StringWriter stringWriter = new StringWriter();
+        
+//             ChartUtilities.saveChartAsPNG(stringWriter, chart, width, height);
          }catch(IOException e){}
     }
     
