@@ -5,6 +5,7 @@ import org.bson.types.ObjectId;
 
 import java.awt.Color;
 import java.io.*;
+import java.lang.Math;
 import java.net.UnknownHostException;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -61,6 +62,10 @@ import net.greghaines.jesque.client.*;
 import static net.greghaines.jesque.utils.JesqueUtils.*;
 import org.gephi.io.exporter.spi.CharacterExporter;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.jfree.chart.*;
+import org.jfree.data.statistics.*;
+import org.jfree.chart.plot.PlotOrientation;
 
 /**
  *
@@ -86,6 +91,10 @@ class JavaEdge{
     
 }
 
+/**
+ * 
+ * @author weidongyang
+ */
 public class App implements Runnable
 {
     private ProjectController pc;
@@ -180,10 +189,32 @@ public class App implements Runnable
         System.out.println("inside genGraph, Nodes: " + undirectedGraph.getNodeCount());
         System.out.println("Edges: " + undirectedGraph.getEdgeCount());
 
+        
+//        get degree distribution
+        Degree degree = new Degree();
+        degree.execute(graphModel, attributeModel);
+        System.out.println("average degree " +degree.getAverageDegree());
+        AttributeColumn degreeColumn = attributeModel.getNodeTable().getColumn("Degree");
+
+        int[] degreeArray;
+        degreeArray = new int[undirectedGraph.getNodeCount()];
+        int i1=0;
+        for (Node n : graphModel.getGraph().getNodes()){
+            int val = Integer.valueOf(n.getNodeData().getAttributes().getValue(Ranking.DEGREE_RANKING).toString());
+            degreeArray[i1++] = val;
+//            System.out.print(val  + " ");
+        }
+        calculateStatistics(degreeArray);
+        
+        System.out.println(" ");
+        
+        
+        
         //Filter      
+        System.out.println("Filter by degree...");
         DegreeRangeFilter degreeFilter = new DegreeRangeFilter();
         degreeFilter.init(undirectedGraph);
-        degreeFilter.setRange(new Range(6, Integer.MAX_VALUE));     //Remove nodes with degree < 30
+        degreeFilter.setRange(new Range(4, Integer.MAX_VALUE));     //Remove nodes with degree < 30
         Query query = filterController.createQuery(degreeFilter);
         GraphView view = filterController.filter(query);
         graphModel.setVisibleView(view);    //Set the filter result as the visible view
@@ -191,42 +222,79 @@ public class App implements Runnable
         //See visible graph stats
         UndirectedGraph graphVisible = graphModel.getUndirectedGraphVisible();
         System.out.println("After Filtering, Nodes: " + graphVisible.getNodeCount());
-        System.out.println("Edges: " + graphVisible.getEdgeCount());
+        System.out.println("Edges: " + graphVisible.getEdgeCount() + "    start layout...");
 
         
         //Layout for 1 minute
-        AutoLayout autoLayout = new AutoLayout(10, TimeUnit.SECONDS);
-        autoLayout.setGraphModel(graphModel);
-        YifanHuLayout firstLayout = new YifanHuLayout(null, new StepDisplacement(1f));
-        ForceAtlasLayout secondLayout = new ForceAtlasLayout(null);
-        AutoLayout.DynamicProperty adjustBySizeProperty = AutoLayout.createDynamicProperty("forceAtlas.adjustSizes.name", Boolean.TRUE, 0.1f);//True after 10% of layout time
-        AutoLayout.DynamicProperty repulsionProperty = AutoLayout.createDynamicProperty("forceAtlas.repulsionStrength.name", new Double(500.), 0f);//500 for the complete period
-        autoLayout.addLayout(firstLayout, 0.1f);
-        autoLayout.addLayout(secondLayout, 0.9f, new AutoLayout.DynamicProperty[]{adjustBySizeProperty, repulsionProperty});
-        autoLayout.execute();
+//        AutoLayout autoLayout = new AutoLayout(40, TimeUnit.SECONDS);
+//        autoLayout.setGraphModel(graphModel);
+//        YifanHuLayout firstLayout = new YifanHuLayout(null, new StepDisplacement(1f));
+//        ForceAtlasLayout secondLayout = new ForceAtlasLayout(null);
+//        AutoLayout.DynamicProperty adjustBySizeProperty = AutoLayout.createDynamicProperty("forceAtlas.adjustSizes.name", Boolean.TRUE, 0.1f);//True after 10% of layout time
+//        AutoLayout.DynamicProperty repulsionProperty = AutoLayout.createDynamicProperty("forceAtlas.repulsionStrength.name", new Double(500.), 0f);//500 for the complete period
+//        autoLayout.addLayout(firstLayout, 0.1f);
+//        autoLayout.addLayout(secondLayout, 0.9f, new AutoLayout.DynamicProperty[]{adjustBySizeProperty, repulsionProperty});
+//        autoLayout.execute();
 
+        ForceAtlas2 fa2Layout = new ForceAtlas2(new ForceAtlas2Builder());
+        fa2Layout.setGraphModel(graphModel);
+        fa2Layout.resetPropertiesValues();
+        fa2Layout.setEdgeWeightInfluence(1.0);
+        fa2Layout.setGravity(1.0);
+        fa2Layout.setScalingRatio(2.0);
+        fa2Layout.setBarnesHutTheta(1.2);
+        fa2Layout.setJitterTolerance(0.1);
+        
+        
+        fa2Layout.initAlgo();
+        int cnt = 0;
+        for(int i=0; i<250 && fa2Layout.canAlgo(); i++){
+            fa2Layout.goAlgo();
+            cnt++;
+        }
+        System.out.println("Layout done, num itr is: "+ cnt + "    ...");
+        fa2Layout.endAlgo();
+        
+        
         //Get Centrality
         GraphDistance distance = new GraphDistance();
         distance.setDirected(false);
         distance.execute(graphModel, attributeModel);
 
-        //Rank color by Degree
-//        Ranking degreeRanking = rankingController.getModel().getRanking(Ranking.NODE_ELEMENT, Ranking.DEGREE_RANKING);
-//        AbstractColorTransformer colorTransformer = (AbstractColorTransformer) rankingController.getModel().getTransformer(Ranking.NODE_ELEMENT, Transformer.RENDERABLE_COLOR);
-//        colorTransformer.setColors(new Color[]{new Color(0xFEF0D9), new Color(0xB30000)});
-//        rankingController.transform(degreeRanking,colorTransformer);
-
+        
         //Rank size by centrality
-        AttributeColumn centralityColumn = attributeModel.getNodeTable().getColumn(GraphDistance.BETWEENNESS);
+        System.out.println("Rank size by centrality...");
+        AttributeColumn centralityColumn = attributeModel.getNodeTable().getColumn(GraphDistance.BETWEENNESS);      
+        
+        
+        
+        double maxVal = 3000;
+        double extremVal = 0;
+        int valCnt = 0;
+        for (Node n : graphModel.getGraph().getNodes()){
+            double val = Double.valueOf(n.getNodeData().getAttributes().getValue(GraphDistance.BETWEENNESS).toString());
+//            System.out.print(val  + " ");
+            if (val > maxVal){
+                extremVal = val;
+                n.getNodeData().getAttributes().setValue(GraphDistance.BETWEENNESS, maxVal);
+                valCnt ++;
+            }
+        }
+        
+        System.out.println("numExtrem " + valCnt +" val " + extremVal);
+       
+        
+        
         Ranking centralityRanking = rankingController.getModel().getRanking(Ranking.NODE_ELEMENT, centralityColumn.getId());
    
         AbstractSizeTransformer sizeTransformer = (AbstractSizeTransformer) rankingController.getModel().getTransformer(Ranking.NODE_ELEMENT, Transformer.RENDERABLE_SIZE);
         sizeTransformer.setMinSize(6);
-        sizeTransformer.setMaxSize(20);
-        rankingController.setInterpolator(Interpolator.newBezierInterpolator(new Float(0.01), new Float(1.0), new Float(0.0), new Float(1.0)));
+        sizeTransformer.setMaxSize(30);
+//        rankingController.setInterpolator(Interpolator.newBezierInterpolator(new Float(0.01), new Float(1.0), new Float(0.0), new Float(1.0)));
         rankingController.transform(centralityRanking,sizeTransformer);
 
         //Preview
+        System.out.println("Partitioning...");
         model.getProperties().putValue(PreviewProperty.SHOW_NODE_LABELS, Boolean.TRUE);
         model.getProperties().putValue(PreviewProperty.EDGE_COLOR, new EdgeColor(Color.GRAY));
         model.getProperties().putValue(PreviewProperty.EDGE_THICKNESS, new Float(0.1f));
@@ -251,6 +319,60 @@ public class App implements Runnable
         partitionController.transform(p2, nodeColorTransformer2);
     }
     
+    private void calculateStatistics(int[] arr){
+        DescriptiveStatistics stat = new DescriptiveStatistics();
+        int numItem = arr.length;
+        double[] value = new double[numItem];
+        
+        double sum = 0, sumSQ = 0;
+        for (int i1 = 0; i1< numItem; i1++){
+            stat.addValue(arr[i1]);
+            value[i1]=arr[i1];
+            sum+=arr[i1];
+            sumSQ += arr[i1]*arr[i1];
+        }
+        double mean = sum / numItem;
+        double std = Math.sqrt(sumSQ/numItem  - mean*mean);
+        System.out.println("total nodes:" + numItem + ", average degree: " + mean+", std: " + std);
+        
+        double meanb = stat.getMean();
+        double stdb = stat.getStandardDeviation();
+        double medianb = stat.getPercentile(50);
+        System.out.println("total nodes:" + numItem + ", average degreeb: " + meanb+", stdb: " + stdb + "median: "+medianb);
+        
+        
+         try{
+            // Create file 
+            FileWriter fstream = new FileWriter("edges.txt");
+            BufferedWriter out = new BufferedWriter(fstream);
+            for (int i1 = 0; i1< numItem; i1++){
+                out.write(""+arr[i1]+"\n");
+            }
+            //Close the output stream
+            out.close();
+        }catch (Exception e){//Catch exception if any
+            System.err.println("Error: " + e.getMessage());
+        }
+         
+         
+         HistogramDataset dataset = new HistogramDataset();
+         dataset.setType(HistogramType.RELATIVE_FREQUENCY);
+         dataset.addSeries("Histogram", value, 20);
+         String plotTitle = "Histogram";
+         String xaxis = "Number of Connections";
+         String yaxis = "Frequency";
+         
+         PlotOrientation orientation = PlotOrientation.VERTICAL;
+         boolean show = false;
+         boolean toolTips = false;
+         boolean urls = false;
+         JFreeChart chart = ChartFactory.createHistogram(plotTitle, xaxis, yaxis, dataset, orientation, show, toolTips, urls);
+         int width = 500;
+         int height = 300;
+         try{
+            ChartUtilities.saveChartAsPNG(new File("hist.png"), chart, width, height);
+         }catch(IOException e){}
+    }
     
     private void exportGraph() {
          //Export
@@ -293,9 +415,13 @@ public class App implements Runnable
 //        }
     }
     
+    /**
+     * 
+     */
     public void run() {
 
         //Init a project - and therefore a workspace
+        System.out.println("Run started...");
         try {
             mongoDB2Graph();
         } catch (Exception ex) {
@@ -305,14 +431,23 @@ public class App implements Runnable
         
         System.out.println("From formed graph, Nodes: "+undirectedGraph.getNodeCount()+" Edges: "+undirectedGraph.getEdgeCount());
 
+        System.out.println("Start gen graph...");
         genGraph();
         
+        System.out.println("Start export graph...");
         exportGraph();
+        System.out.println("Done...");
     }
     
+    /**
+     * 
+     * @param s
+     * @throws UnknownHostException
+     */
     public App(final String s) throws UnknownHostException {
         this.user_id = s;
         
+        System.out.println("Fetching data from Mongo...");
         Mongo m = new Mongo();
         DB db = m.getDB("trust_exchange_development");
         
@@ -324,24 +459,30 @@ public class App implements Runnable
         DBCursor cursor = fb_profiles.find(query);
         
         this.fb_profile = cursor.next();
-//        run();
+        run();
     }
     
+    /**
+     * 
+     * @param args
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
 
 //        App app = new App("4f63c7633f033175fe000007");
-                final Config config = new ConfigBuilder().build();
-
-        final Worker worker = new WorkerImpl(config,
-                Arrays.asList("viz"), 
-                map(entry("com.socialislands.viz.VizWorker", App.class)));
-
-        
-        final Thread t = new Thread(worker);
-        t.start();
+        App app = new App("4f63c6e23f033175fe000004");
+//                final Config config = new ConfigBuilder().build();
+//
+//        final Worker worker = new WorkerImpl(config,
+//                Arrays.asList("viz"), 
+//                map(entry("com.socialislands.viz.VizWorker", App.class)));
+//
+//        
+//        final Thread t = new Thread(worker);
+//        t.start();
         //Thread.yield();
         //worker.end(false);
-        t.join();
+//        t.join();
     }
 
 }
