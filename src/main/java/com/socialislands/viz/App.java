@@ -4,6 +4,7 @@ import com.mongodb.*;
 import org.bson.types.ObjectId;
 
 import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.Math;
 import java.net.UnknownHostException;
@@ -424,41 +425,35 @@ public class App implements Runnable
         int numItem = arr.length;
         double[] value = new double[numItem];
         
-        double sum = 0, sumSQ = 0;
         for (int i1 = 0; i1< numItem; i1++){
             stat.addValue(arr[i1]);
             value[i1]=arr[i1];
-            sum+=arr[i1];
-            sumSQ += arr[i1]*arr[i1];
         }
-        double mean = sum / numItem;
-        double std = Math.sqrt(sumSQ/numItem  - mean*mean);
-        System.out.println("total nodes:" + numItem + ", average degree: " + mean+", std: " + std);
         
-        double meanb = stat.getMean();
-        double stdb = stat.getStandardDeviation();
-        double medianb = stat.getPercentile(50);
-        System.out.println("total nodes:" + numItem + ", average degreeb: " + meanb+", stdb: " + stdb + "median: "+medianb);
+        double mean = stat.getMean();
+        double std = stat.getStandardDeviation();
+        double median = stat.getPercentile(50);
+        System.out.println("total nodes:" + numItem + ", average degreeb: " + mean+", stdb: " + std + "median: "+median);
         
         BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("averageDegree", meanb));
+        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("averageDegree", mean));
 	this.fb_profiles.update(query, updateCmd);
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("stdDegree", stdb));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("stdDegree", std));
 	this.fb_profiles.update(query, updateCmd);
 
         
-         try{
-            // Create file 
-            FileWriter fstream = new FileWriter("edges.txt");
-            BufferedWriter out = new BufferedWriter(fstream);
-            for (int i1 = 0; i1< numItem; i1++){
-                out.write(""+arr[i1]+"\n");
-            }
-            //Close the output stream
-            out.close();
-        }catch (Exception e){//Catch exception if any
-            System.err.println("Error: " + e.getMessage());
-        }
+//         try{
+//            // Create file 
+//            FileWriter fstream = new FileWriter("edges.txt");
+//            BufferedWriter out = new BufferedWriter(fstream);
+//            for (int i1 = 0; i1< numItem; i1++){
+//                out.write(""+arr[i1]+"\n");
+//            }
+//            //Close the output stream
+//            out.close();
+//        }catch (Exception e){//Catch exception if any
+//            System.err.println("Error: " + e.getMessage());
+//        }
          
          
          HistogramDataset dataset = new HistogramDataset();
@@ -477,10 +472,13 @@ public class App implements Runnable
          int height = 300;
          try{
             ChartUtilities.saveChartAsPNG(new File("hist.png"), chart, width, height);
-//             StringWriter stringWriter = new StringWriter();
-        
-//             ChartUtilities.saveChartAsPNG(stringWriter, chart, width, height);
-         }catch(IOException e){}
+            byte[] buffer;
+            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+            ChartUtilities.writeChartAsPNG(outStream, chart, width, height);
+            buffer = outStream.toByteArray();
+            updateCmd = new BasicDBObject("$set", new BasicDBObject("histogram", buffer));
+            this.fb_profiles.update(query, updateCmd);
+        }catch(IOException e){}
     }
     
     private void exportGraph() {
