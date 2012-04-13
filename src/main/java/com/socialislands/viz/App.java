@@ -229,7 +229,7 @@ public class App implements Runnable
             if (node2 > node1){ // skip symmetrical edges
                 int idx1 = friendHash.get(node1);
                 int idx2 = friendHash.get(node2);
-                System.out.println("node1: "+node1+" idx: "+idx1+ " node2: "+node2 + " idx: "+idx2);
+//                System.out.println("node1: "+node1+" idx: "+idx1+ " node2: "+node2 + " idx: "+idx2);
                 Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
                 undirectedGraph.addEdge(e1);
             }
@@ -340,20 +340,48 @@ public class App implements Runnable
         
         
         
-        double maxVal = 3000;
+        double maxVal = 0;
+        double secondMax = 0;
+        double thirdMax = 0;
         double extremVal = 0;
-        int valCnt = 0;
+        Node nMax = null;
+        Node nSecond = null;
+        
+        int numNode = graphModel.getGraph().getNodeCount();
         for (Node n : graphModel.getGraph().getNodes()){
             double val = Double.valueOf(n.getNodeData().getAttributes().getValue(GraphDistance.BETWEENNESS).toString());
 //            System.out.print(val  + " ");
             if (val > maxVal){
-                extremVal = val;
-                n.getNodeData().getAttributes().setValue(GraphDistance.BETWEENNESS, maxVal);
-                valCnt ++;
+                thirdMax = secondMax;
+                secondMax = maxVal;
+                nSecond = nMax;
+                maxVal = val;
+                nMax = n;
+                
+            }else if (val > secondMax){
+                thirdMax = secondMax;
+                secondMax = val;
+                nSecond = n;
+            }else if (val > thirdMax){
+                thirdMax = val;
             }
         }
+        System.out.println(numNode + "nodes, max: "+ maxVal +" second: "+secondMax +" third: "+thirdMax);
         
-        System.out.println("numExtrem " + valCnt +" val " + extremVal);
+        nMax.getNodeData().getAttributes().setValue(GraphDistance.BETWEENNESS, thirdMax*1.5);
+        nSecond.getNodeData().getAttributes().setValue(GraphDistance.BETWEENNESS, thirdMax*1.2);
+        
+//        int valCnt = 0;
+//        for (Node n : graphModel.getGraph().getNodes()){
+//            double val = Double.valueOf(n.getNodeData().getAttributes().getValue(GraphDistance.BETWEENNESS).toString());
+////            System.out.print(val  + " ");
+//            if (val > maxVal){
+//                n.getNodeData().getAttributes().setValue(GraphDistance.BETWEENNESS, maxVal);
+//                valCnt ++;
+//            }
+//        }
+        
+//        System.out.println("numExtrem " + valCnt +" val " + extremVal);
        
         
         
