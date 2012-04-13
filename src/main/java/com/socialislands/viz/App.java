@@ -71,30 +71,7 @@ import org.jfree.chart.plot.PlotOrientation;
  *
  * @author weidongyang
  */
-class JavaFriend{
-    long uid;
-    String name;
-    public JavaFriend(long _uid, String _name){
-        uid = _uid;
-        name = _name;
-    }
-}
- 
 
-class JavaEdge{
-    int idx1;
-    int idx2;
-    public JavaEdge(int _idx1, int _idx2){
-        idx1 = _idx1;
-        idx2 = _idx2;
-    }
-    
-}
-
-/**
- * 
- * @author weidongyang
- */
 public class App implements Runnable
 {
     private ProjectController pc;
@@ -104,6 +81,14 @@ public class App implements Runnable
     private String user_id;
     private DBObject fb_profile;         
     private DBCollection fb_profiles;
+    private DBCollection users;
+    private DBObject user;
+    private String userName;
+    private long userUid;
+    Hashtable<Long, Integer> friendHash;
+    Node[] nodes;
+    Mongo m;
+    DB db;
     
     private void mongoDB2Graph()  throws Exception {
         pc = Lookup.getDefault().lookup(ProjectController.class);
@@ -117,9 +102,9 @@ public class App implements Runnable
         
         BasicDBList friends = (BasicDBList) this.fb_profile.get("friends");
         
-        JavaFriend[] javaFriends = new JavaFriend[friends.size()];
-        Node[] nodes = new Node[friends.size()];
-        Hashtable<Long, Integer> friendHash = new Hashtable<Long, Integer>();
+        nodes = new Node[friends.size()*2];
+        friendHash = new Hashtable<Long, Integer>();
+        
         Iterator itr = friends.iterator(); 
         BasicDBObject friend = new BasicDBObject();
         int idx = 0;
@@ -128,7 +113,6 @@ public class App implements Runnable
             long uid = Long.valueOf(friend.get("uid").toString());
             String name = friend.get("name").toString();
             friendHash.put(new Long(uid), new Integer(idx));
-            javaFriends[idx]=new JavaFriend(uid, name);
             String suid = ""+uid;
             Node n0 = graphModel.factory().newNode(suid);
             n0.getNodeData().setLabel(name);
@@ -138,9 +122,13 @@ public class App implements Runnable
             //            System.out.println(friend);
 
         }
-        Node nego = graphModel.factory().newNode("0");
-        nego.getNodeData().setLabel("Ego");
+        
+        friendHash.put(new Long(userUid), idx);
+        Node nego = graphModel.factory().newNode(""+userUid);
+        nego.getNodeData().setLabel(userName);
         undirectedGraph.addNode(nego);
+        nodes[idx]=nego;
+        idx++;
         
         System.out.println(friend);
         System.out.println(friend.get("uid"));
@@ -170,12 +158,96 @@ public class App implements Runnable
             Edge e2 = graphModel.factory().newEdge(nodes[i1], nego);
             undirectedGraph.addEdge(e2);
         }
+       
         
-        long int1 = Long.valueOf(edge.get("uid1").toString());
-        long int2 = Long.valueOf(edge.get("uid2").toString());
+        System.out.println(edges.size());
+    }
+    
+    private void add2Graph(String user_id)  throws Exception {
+        System.out.println("Adding data from Mongo for user: "+user_id);
         
-        System.err.println(int1);
-        System.err.println(int2);
+        BasicDBObject query = new BasicDBObject();
+        query.put("user_id", new ObjectId(user_id));
+        
+        DBCursor cursor = fb_profiles.find(query);
+        
+        DBObject fb_profile = cursor.next();
+        
+        BasicDBObject queryb = new BasicDBObject();
+        queryb.put("_id", new ObjectId(user_id));
+        
+        cursor = users.find(queryb);
+        DBObject user = cursor.next();
+        
+        String userName = user.get("name").toString();
+
+        Long userUid = Long.valueOf(user.get("uid").toString());        
+      
+        
+        BasicDBList friends = (BasicDBList) fb_profile.get("friends");
+       
+        Iterator itr = friends.iterator(); 
+        BasicDBObject friend = new BasicDBObject();
+        int idx = friendHash.size();
+        while(itr.hasNext()) {
+            friend = (BasicDBObject) itr.next(); 
+            long uid = Long.valueOf(friend.get("uid").toString());
+            String name = friend.get("name").toString();
+            if(!friendHash.containsKey(uid)){
+                friendHash.put(new Long(uid), new Integer(idx));
+                String suid = ""+uid;
+                Node n0 = graphModel.factory().newNode(suid);
+                n0.getNodeData().setLabel(name);
+                undirectedGraph.addNode(n0);
+                nodes[idx]=n0;
+                idx++;
+            }
+        }
+        if(!friendHash.containsKey(userUid)){
+            friendHash.put(new Long(userUid), idx);
+            Node nego = graphModel.factory().newNode(""+userUid);
+            nego.getNodeData().setLabel(userName);
+            undirectedGraph.addNode(nego);
+            nodes[idx]=nego;
+            idx++;
+        }
+        
+        System.out.println(friend);
+        System.out.println(friend.get("uid"));
+        System.out.println(friends.size());
+        
+        BasicDBList edges = (BasicDBList) fb_profile.get("edges");
+        System.out.println(edges.toArray()[0].getClass().getName());
+        
+        itr = edges.iterator(); 
+        BasicDBObject edge = new BasicDBObject();
+        while(itr.hasNext()) {
+
+            edge = (BasicDBObject) itr.next(); 
+            long node1 = Long.valueOf(edge.get("uid1").toString());
+            long node2 = Long.valueOf(edge.get("uid2").toString());
+            if (node2 > node1){ // skip symmetrical edges
+                int idx1 = friendHash.get(node1);
+                int idx2 = friendHash.get(node2);
+                System.out.println("node1: "+node1+" idx: "+idx1+ " node2: "+node2 + " idx: "+idx2);
+                Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
+                undirectedGraph.addEdge(e1);
+            }
+            //System.out.println(edge);
+
+        }
+
+        
+        int egoidx = friendHash.get(userUid);
+        itr = friends.iterator(); 
+        friend = new BasicDBObject();
+        while(itr.hasNext()) {
+            friend = (BasicDBObject) itr.next(); 
+            long uid = Long.valueOf(friend.get("uid").toString());
+            int nodeIdx = friendHash.get(uid);
+            Edge e2 = graphModel.factory().newEdge(nodes[nodeIdx], nodes[egoidx]);
+            undirectedGraph.addEdge(e2);
+        }
         
         System.out.println(edges.size());
     }
@@ -433,6 +505,7 @@ public class App implements Runnable
         System.out.println("Run started...");
         try {
             mongoDB2Graph();
+//            add2Graph("4f63c6e23f033175fe000004");
         } catch (Exception ex) {
             ex.printStackTrace();
             return;
@@ -457,8 +530,8 @@ public class App implements Runnable
         this.user_id = s;
         
         System.out.println("Fetching data from Mongo...");
-        Mongo m = new Mongo();
-        DB db = m.getDB("trust_exchange_development");
+        m = new Mongo();
+        db = m.getDB("trust_exchange_development");
         
         this.fb_profiles = db.getCollection("facebook_profiles");
         
@@ -468,6 +541,17 @@ public class App implements Runnable
         DBCursor cursor = fb_profiles.find(query);
         
         this.fb_profile = cursor.next();
+        
+        this.users = db.getCollection("users");
+        BasicDBObject queryb = new BasicDBObject();
+        queryb.put("_id", new ObjectId(this.user_id));
+        
+        cursor = users.find(queryb);
+        this.user = cursor.next();
+        
+        this.userName = user.get("name").toString();
+
+        this.userUid = Long.valueOf(user.get("uid").toString());        
         run();
     }
     
@@ -478,8 +562,8 @@ public class App implements Runnable
      */
     public static void main(String[] args) throws Exception {
 
-//        App app = new App("4f63c7633f033175fe000007");
-        App app = new App("4f63c6e23f033175fe000004");
+        App app = new App("4f63c7633f033175fe000007"); //Weidong
+//        App app = new App("4f63c6e23f033175fe000004");  //Wolf
 //                final Config config = new ConfigBuilder().build();
 //
 //        final Worker worker = new WorkerImpl(config,
