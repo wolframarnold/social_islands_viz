@@ -406,6 +406,15 @@ public class App implements Runnable
         System.out.println(p2.getPartsCount() + " partitions found");
         NodeColorTransformer nodeColorTransformer2 = new NodeColorTransformer();
         nodeColorTransformer2.randomizeColors(p2);
+        
+        System.out.println(nodeColorTransformer2.getMap());
+       
+        // FIXME: Error can't serialize java.awt.Color object --> pull out r,g,b and stick into array or something in Mongo
+//        BasicDBObject mongo_query = new BasicDBObject("_id", this.fb_profile.get("_id"));
+//        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("label_colors", nodeColorTransformer2.getMap()));
+ 
+//	this.fb_profiles.update(mongo_query, updateCmd);
+        
         partitionController.transform(p2, nodeColorTransformer2);
     }
     

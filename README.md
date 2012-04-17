@@ -36,7 +36,10 @@ Run -> Set Project Configuration -> Customize -> Run
 
 In the "VM Options" field, add:
 
-    -DMONGOHQ_URL="mongodb://:@localhost:27017/trust_exchange_development"
+    -DMONGOHQ_URL="mongodb://:@127.0.0.1:27017/trust_exchange_development"
+
+Note: Instead of `127.0.0.1`, you can also try `localhost`, if it doesn't work.
+
 
 Running Standalone (without Jesque)
 ===================================
