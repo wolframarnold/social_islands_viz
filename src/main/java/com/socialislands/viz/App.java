@@ -57,10 +57,6 @@ import org.gephi.statistics.plugin.*;
 
 import org.openide.util.Lookup;
 
-import net.greghaines.jesque.*;
-import net.greghaines.jesque.worker.*;
-import net.greghaines.jesque.client.*;
-import static net.greghaines.jesque.utils.JesqueUtils.*;
 import org.gephi.io.exporter.spi.CharacterExporter;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -277,12 +273,8 @@ public class App implements Runnable
             degreeArray[i1++] = val;
 //            System.out.print(val  + " ");
         }
-        calculateStatistics(degreeArray);
-        
-        System.out.println(" ");
-        
-        
-        
+        reportStatistics(degreeArray);
+           
         //Filter      
         System.out.println("Filter by degree...");
         DegreeRangeFilter degreeFilter = new DegreeRangeFilter();
@@ -420,78 +412,32 @@ public class App implements Runnable
         partitionController.transform(p2, nodeColorTransformer2);
     }
     
-    private void calculateStatistics(int[] arr){
+    private void reportStatistics(int[] arr){
         DescriptiveStatistics stat = new DescriptiveStatistics();
         int numItem = arr.length;
-        double[] value = new double[numItem];
         
         for (int i1 = 0; i1< numItem; i1++){
             stat.addValue(arr[i1]);
-            value[i1]=arr[i1];
         }
         
         double mean = stat.getMean();
         double std = stat.getStandardDeviation();
         double median = stat.getPercentile(50);
+        
         System.out.println("total nodes:" + numItem + ", average degreeb: " + mean+", stdb: " + std + "median: "+median);
         
         BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("averageDegree", mean));
+        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("degree_average", mean));
 	this.fb_profiles.update(query, updateCmd);
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("stdDegree", std));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("degree_stddev", std));
+	this.fb_profiles.update(query, updateCmd);         
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("degree_median", median));
 	this.fb_profiles.update(query, updateCmd);
-
-        
-//         try{
-//            // Create file 
-//            FileWriter fstream = new FileWriter("edges.txt");
-//            BufferedWriter out = new BufferedWriter(fstream);
-//            for (int i1 = 0; i1< numItem; i1++){
-//                out.write(""+arr[i1]+"\n");
-//            }
-//            //Close the output stream
-//            out.close();
-//        }catch (Exception e){//Catch exception if any
-//            System.err.println("Error: " + e.getMessage());
-//        }
-         
-         
-         HistogramDataset dataset = new HistogramDataset();
-         dataset.setType(HistogramType.RELATIVE_FREQUENCY);
-         dataset.addSeries("Histogram", value, 20);
-         String plotTitle = "Histogram";
-         String xaxis = "Number of Connections";
-         String yaxis = "Frequency";
-         
-         PlotOrientation orientation = PlotOrientation.VERTICAL;
-         boolean show = false;
-         boolean toolTips = false;
-         boolean urls = false;
-         JFreeChart chart = ChartFactory.createHistogram(plotTitle, xaxis, yaxis, dataset, orientation, show, toolTips, urls);
-         int width = 500;
-         int height = 300;
-         try{
-            ChartUtilities.saveChartAsPNG(new File("hist.png"), chart, width, height);
-            byte[] buffer;
-            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-            ChartUtilities.writeChartAsPNG(outStream, chart, width, height);
-            buffer = outStream.toByteArray();
-            updateCmd = new BasicDBObject("$set", new BasicDBObject("histogram", buffer));
-            this.fb_profiles.update(query, updateCmd);
-        }catch(IOException e){}
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("histogram_num_connections", arr));
+	this.fb_profiles.update(query, updateCmd);
     }
     
     private void exportGraph() {
-         //Export
-//        ExportController ec = Lookup.getDefault().lookup(ExportController.class);
-//        try {
-//            ec.exportFile(new File("fb_simple_wolf.svg"));
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//            return;
-//        }
-//        
-
         //Export only visible graph -- to string buffer, then to Mongo as "graph" attribute on Facebook profile record.
         
         ExportController ec = Lookup.getDefault().lookup(ExportController.class);
@@ -506,20 +452,6 @@ public class App implements Runnable
         BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("graph", result));
  
 	this.fb_profiles.update(query, updateCmd);
-
-//        GraphExporter exporter = (GraphExporter) ec.getExporter("gexf");     //Get GEXF exporter
-//        try {
-//            ec.exportFile(new File("../../Sites/raphv-gexf-js/graph.gexf"), exporter);
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//            return;
-//        }
-//        try {
-//            ec.exportFile(new File("../social_islands/public/graph.svg"));
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//            return;
-//        }
     }
     
     /**
@@ -555,10 +487,23 @@ public class App implements Runnable
     public App(final String s) throws UnknownHostException {
         this.user_id = s;
         
-        System.out.println("Fetching data from Mongo...");
-        m = new Mongo();
-        db = m.getDB("trust_exchange_development");
+        String mongo_url = System.getenv("MONGOHQ_URL");
+        if (mongo_url == null) {
+            mongo_url = System.getProperty("MONGOHQ_URL");
+        }
         
+        MongoURI mongoURI = new MongoURI(mongo_url);
+        this.db = mongoURI.connectDB();
+        
+        // Only authenticate if username or password provided
+        if (!"".equals(mongoURI.getUsername()) || mongoURI.getPassword().length > 0) {
+            Boolean success = this.db.authenticate(mongoURI.getUsername(), mongoURI.getPassword());  
+
+            if (!success) {
+                System.out.println("MongoDB Authentication failed");
+                return;
+            }
+        }
         this.fb_profiles = db.getCollection("facebook_profiles");
         
         BasicDBObject query = new BasicDBObject();
@@ -566,42 +511,24 @@ public class App implements Runnable
         
         DBCursor cursor = fb_profiles.find(query);
         
-        this.fb_profile = cursor.next();
-        
-        this.users = db.getCollection("users");
-        BasicDBObject queryb = new BasicDBObject();
-        queryb.put("_id", new ObjectId(this.user_id));
-        
-        cursor = users.find(queryb);
-        this.user = cursor.next();
-        
-        this.userName = user.get("name").toString();
+        try {
+            this.fb_profile = cursor.next();
 
-        this.userUid = Long.valueOf(user.get("uid").toString());        
-        run();
-    }
-    
-    /**
-     * 
-     * @param args
-     * @throws Exception
-     */
-    public static void main(String[] args) throws Exception {
+            this.users = db.getCollection("users");
+            BasicDBObject queryb = new BasicDBObject();
+            queryb.put("_id", new ObjectId(this.user_id));
 
-        App app = new App("4f63c7633f033175fe000007"); //Weidong
-//        App app = new App("4f63c6e23f033175fe000004");  //Wolf
-//                final Config config = new ConfigBuilder().build();
-//
-//        final Worker worker = new WorkerImpl(config,
-//                Arrays.asList("viz"), 
-//                map(entry("com.socialislands.viz.VizWorker", App.class)));
-//
-//        
-//        final Thread t = new Thread(worker);
-//        t.start();
-        //Thread.yield();
-        //worker.end(false);
-//        t.join();
+            cursor = users.find(queryb);
+            this.user = cursor.next();
+            this.userName = user.get("name").toString();
+
+            this.userUid = Long.valueOf(user.get("uid").toString());        
+            run();        
+        }
+        catch(java.util.NoSuchElementException e) {
+            System.out.println("Could not find record in facebook_profiles or users collection with user_id: "+this.user_id);
+        }
     }
+
 
 }
