@@ -60,9 +60,6 @@ import org.openide.util.Lookup;
 import org.gephi.io.exporter.spi.CharacterExporter;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.jfree.chart.*;
-import org.jfree.data.statistics.*;
-import org.jfree.chart.plot.PlotOrientation;
 
 /**
  *
