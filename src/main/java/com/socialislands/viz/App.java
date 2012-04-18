@@ -8,12 +8,10 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.Math;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.gephi.data.attributes.api.AttributeColumn;
@@ -404,16 +402,33 @@ public class App implements Runnable
         AttributeColumn modColumn = attributeModel.getNodeTable().getColumn(Modularity.MODULARITY_CLASS);
         Partition p2 = partitionController.buildPartition(modColumn, undirectedGraph);
         System.out.println(p2.getPartsCount() + " partitions found");
-        NodeColorTransformer nodeColorTransformer2 = new NodeColorTransformer();
-        nodeColorTransformer2.randomizeColors(p2);
         
-        System.out.println(nodeColorTransformer2.getMap());
-       
-        // FIXME: Error can't serialize java.awt.Color object --> pull out r,g,b and stick into array or something in Mongo
-//        BasicDBObject mongo_query = new BasicDBObject("_id", this.fb_profile.get("_id"));
-//        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("label_colors", nodeColorTransformer2.getMap()));
- 
-//	this.fb_profiles.update(mongo_query, updateCmd);
+        // Improve colors -- prefer some neon colors that shine on black background
+        NodeColorTransformer nodeColorTransformer2 = new NodeColorTransformer();
+        int i=0;
+        Map<Object, Color> color_map = nodeColorTransformer2.getMap();
+        
+        // build up linear array for colors to store in MongoDB
+        ArrayList<BasicDBObject> colors_for_mongo = new ArrayList<BasicDBObject>();
+                
+        for (Part p : p2.getParts()) {
+            Color color = Palette.colors[i];
+            color_map.put(p.getValue(), color);
+            BasicDBObject color_hash = new BasicDBObject();
+            color_hash.put("r", color.getRed());
+            color_hash.put("g", color.getGreen());
+            color_hash.put("b", color.getBlue());
+            colors_for_mongo.add(color_hash);
+            ++i;
+        }
+        
+        //        nodeColorTransformer2.randomizeColors(p2);
+        //        printMap(nodeColorTransformer2.getMap());
+
+        // save colors to MongoDB
+        BasicDBObject mongo_query = new BasicDBObject("_id", this.fb_profile.get("_id"));
+        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("label_colors", colors_for_mongo));
+	this.fb_profiles.update(mongo_query, updateCmd);
         
         partitionController.transform(p2, nodeColorTransformer2);
     }
@@ -497,7 +512,10 @@ public class App implements Runnable
         if (mongo_url == null) {
             mongo_url = System.getProperty("MONGOHQ_URL");
         }
-        
+        if (mongo_url == null) {
+            System.out.println("ERROR! Could not find Mongo connection parameters. Did you set MONGOHQ_URL as environmen variable or Java system parameter?");
+            return;
+        }
         MongoURI mongoURI = new MongoURI(mongo_url);
         this.db = mongoURI.connectDB();
         
@@ -536,5 +554,16 @@ public class App implements Runnable
         }
     }
 
-
+//        public static void printMap(Map<java.lang.Object,Color> mp) {
+//            Iterator it = mp.entrySet().iterator();
+//            while (it.hasNext()) {
+//                Map.Entry pairs = (Map.Entry)it.next();
+//                Color color = (Color)pairs.getValue();
+//                System.out.println(pairs.getKey() + " = (String)" + color.toString() + " (Int RGB)=" + Integer.toHexString(color.getRGB()) +
+//                        " (red) " + color.getRed() + " (green) " + color.getGreen() + " (blue) " + color.getBlue() +
+//                        " (rgb) rgb("+color.getRed()+","+color.getGreen()+","+color.getBlue()+")");
+//                it.remove(); // avoids a ConcurrentModificationException
+//            }
+//        }
+// 
 }
