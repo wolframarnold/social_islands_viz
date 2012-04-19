@@ -58,6 +58,7 @@ import org.openide.util.Lookup;
 import org.gephi.io.exporter.spi.CharacterExporter;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.gephi.filters.plugin.graph.KCoreBuilder;
 
 /**
  *
@@ -283,7 +284,22 @@ public class App implements Runnable
         UndirectedGraph graphVisible = graphModel.getUndirectedGraphVisible();
         System.out.println("After Filtering, Nodes: " + graphVisible.getNodeCount());
         System.out.println("Edges: " + graphVisible.getEdgeCount() + "    start layout...");
-
+        
+        //calculating KCore
+        GraphView tview = graphModel.newView();
+        UndirectedGraph tgraph = graphModel.getUndirectedGraph(tview);
+        KCoreBuilder.KCoreFilter kCoreFilter = new KCoreBuilder.KCoreFilter();
+        int k = 1;
+        while (tgraph.getNodeCount() > 0){
+            kCoreFilter.setK(k);
+            kCoreFilter.filter(tgraph);
+            System.out.println("After KCore Filtering, K" + k +" Nodes: " + tgraph.getNodeCount());
+            System.out.println("Edges: " + tgraph.getEdgeCount());
+            k++;
+        }
+        int kCore = k-1;
+        graphModel.setVisibleView(view);
+        
         
         //Layout for 1 minute
 //        AutoLayout autoLayout = new AutoLayout(40, TimeUnit.SECONDS);
