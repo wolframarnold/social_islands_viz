@@ -448,7 +448,7 @@ public class App implements Runnable
 
         // save colors to MongoDB
         BasicDBObject mongo_query = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("label_colors", colors_for_mongo));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("label_colors", colors_for_mongo));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
         partitionController.transform(p2, nodeColorTransformer2);
