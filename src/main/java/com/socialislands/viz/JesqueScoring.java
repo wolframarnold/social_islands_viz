@@ -6,7 +6,6 @@ package com.socialislands.viz;
 
 import java.util.Arrays;
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 import static net.greghaines.jesque.utils.JesqueUtils.*;
@@ -16,17 +15,14 @@ import static net.greghaines.jesque.utils.JesqueUtils.*;
  *
  * @author wolfram
  */
-public class JesqueScoring {
+public class JesqueScoring extends JesqueWorker {
 
     public static void main(String[] args) throws Exception {
-
-        // DO NOT comment this out!!!
-        // To run the app standalone, use the StandAlone class
-        final Config config = new ConfigBuilder().build();
-
+        final Config config = configureRedisConnection();
+        
         final Worker worker = new WorkerImpl(config,
-                Arrays.asList("viz"), 
-                map(entry("com.socialislands.viz.VizWorker", App.class)));
+                Arrays.asList("scoring"), 
+                map(entry("com.socialislands.viz.ScoringWorker", ScoringApp.class)));
         
         final Thread t = new Thread(worker);
         t.start();
