@@ -1,1 +1,2 @@
-worker: sh target/bin/java-worker
+worker: sh target/bin/social_islands_viz
+
