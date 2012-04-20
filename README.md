@@ -30,6 +30,9 @@ but that's not easy to do for an IDE like NetBeans. So, if the `MONGOHO_URL`
 environment variable is not set, it'll try to look for a Java system
 property by the same name.
 
+Running inside NetBeans
+-----------------------
+
 To set a Java system property in NetBeans, add it here:
 
 Run -> Set Project Configuration -> Customize -> Run
@@ -40,9 +43,8 @@ In the "VM Options" field, add:
 
 Note: Instead of `127.0.0.1`, you can also try `localhost`, if it doesn't work.
 
-
-Running Standalone (without Jesque)
-===================================
+Running Standalone (without Jesque) with NetBeans
+-------------------------------------------------
 
 The default operation for the app is to listen on Jesque and take user_id's
 from there to process.
@@ -55,4 +57,20 @@ Run -> Set Project Configuration -> Customize -> Run -> Main class
 set this to: `com.socialislands.viz.StandAlone` for stand-alone
 
 or to: `com.socialislands.viz.Jesque` for Jesque operation.
+
+Running Jesque from the command line
+------------------------------------
+
+Build as normal with Netbeans. This will create a script and the entire code
+archive in a sub-folder `target` -- the contents of which are entirely
+generated and it's not in the git repo.
+
+A launch script is written to `target/bin/social_islands_viz`. You need to give
+it execute permissions:
+
+    chmod +x target/bin/social_islands_viz
+
+Then run it with the `MONGOHQ_URL` set:
+
+    MONGOHQ_URL="mongodb://:@127.0.0.1:27017/trust_exchange_development" target/bin/social_islands_viz
 

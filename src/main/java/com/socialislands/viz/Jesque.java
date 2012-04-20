@@ -4,6 +4,8 @@
  */
 package com.socialislands.viz;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
@@ -19,11 +21,24 @@ import static net.greghaines.jesque.utils.JesqueUtils.*;
 public class Jesque {
 
     public static void main(String[] args) throws Exception {
-
-        // DO NOT comment this out!!!
-        // To run the app standalone, use the StandAlone class
-        final Config config = new ConfigBuilder().build();
-
+        final ConfigBuilder jesque_config_builder = new ConfigBuilder();
+        
+        String redis_url = System.getenv("REDISTOGO_URL");
+        if (redis_url != null) {
+            // use Heroku settings
+            try {
+                URI redisURI = new URI(redis_url);
+                jesque_config_builder.withHost(redisURI.getHost());
+                jesque_config_builder.withPort(redisURI.getPort());
+                jesque_config_builder.withPassword(redisURI.getUserInfo().split(":",2)[1]);
+            }
+            catch (URISyntaxException e) {
+                System.out.println("ERROR! Parsing of Redis URL failed: " + e.getMessage());
+            }
+        }
+        
+        final Config config = jesque_config_builder.build();
+        
         final Worker worker = new WorkerImpl(config,
                 Arrays.asList("viz"), 
                 map(entry("com.socialislands.viz.VizWorker", App.class)));
