@@ -18,7 +18,7 @@ import static net.greghaines.jesque.utils.JesqueUtils.*;
  *
  * @author wolfram
  */
-public class Jesque {
+public class JesqueViz {
 
     public static void main(String[] args) throws Exception {
         final ConfigBuilder jesque_config_builder = new ConfigBuilder();

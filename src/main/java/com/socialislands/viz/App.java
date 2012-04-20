@@ -300,8 +300,8 @@ public class App implements Runnable
         int kCore = k-1;
         
         BasicDBObject mongo_query_kcore = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("kcore", kCore));
-	this.fb_profiles.update(mongo_query_kcore, updateCmd);
+        BasicDBObject updateCmdkCore = new BasicDBObject("$set", new BasicDBObject("kcore", kCore));
+	this.fb_profiles.update(mongo_query_kcore, updateCmdkCore);
         
         graphModel.setVisibleView(view);
         
