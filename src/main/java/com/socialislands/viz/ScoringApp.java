@@ -15,18 +15,18 @@ public class ScoringApp extends App
 {
     private int numNodes;
     private int numEdges;
-    private double clusteringCoefficient;
+    private double graphDensity;
     private int kCore;
     private int kCoreSize;
     @Override
     protected void generateResult() {
         numNodes = undirectedGraph.getNodeCount();
         numEdges = undirectedGraph.getEdgeCount();
-        clusteringCoefficient = numEdges/(numNodes*(numNodes-1)*0.5);
+        graphDensity = numEdges/(numNodes*(numNodes-1)*0.5);
         
         System.out.println("Total number of Nodes: " + numNodes);
         System.out.println("Total number of Edges: " + numEdges);
-        System.out.println("Clustering Coefficient: "+ clusteringCoefficient);
+        System.out.println("Graph Density: "+ graphDensity);
         
         //calculating KCore
         GraphView tview = graphModel.newView();
@@ -58,7 +58,7 @@ public class ScoringApp extends App
         updateCmd = new BasicDBObject("$set", new BasicDBObject("kCoreSize", kCoreSize));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("clusteringCoefficient", clusteringCoefficient));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("graphDensity", graphDensity));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
         updateCmd = new BasicDBObject("$set", new BasicDBObject("degree", numNodes));
