@@ -1,63 +1,9 @@
 package com.socialislands.viz;
 
 import com.mongodb.*;
-import org.bson.types.ObjectId;
-
-import java.awt.Color;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.lang.Math;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import org.gephi.data.attributes.api.AttributeColumn;
-import org.gephi.data.attributes.api.AttributeController;
-import org.gephi.data.attributes.api.AttributeModel;
-import org.gephi.filters.api.FilterController;
-import org.gephi.filters.api.Query;
-import org.gephi.filters.api.Range;
-import org.gephi.filters.plugin.graph.DegreeRangeBuilder.DegreeRangeFilter;
-import org.gephi.graph.api.DirectedGraph;
-import org.gephi.graph.api.Edge;
-import org.gephi.graph.api.GraphController;
-import org.gephi.graph.api.GraphModel;
 import org.gephi.graph.api.GraphView;
-import org.gephi.graph.api.Node;
 import org.gephi.graph.api.UndirectedGraph;
-import org.gephi.io.exporter.api.ExportController;
-import org.gephi.io.exporter.spi.GraphExporter;
-import org.gephi.io.generator.plugin.RandomGraph;
-import org.gephi.io.importer.api.Container;
-import org.gephi.io.importer.api.ContainerFactory;
-import org.gephi.io.importer.api.EdgeDefault;
-import org.gephi.io.importer.api.ImportController;
-import org.gephi.io.processor.plugin.DefaultProcessor;
-import org.gephi.layout.plugin.AutoLayout;
-import org.gephi.layout.plugin.force.StepDisplacement;
-import org.gephi.layout.plugin.force.yifanHu.YifanHuLayout;
-import org.gephi.layout.plugin.forceAtlas.ForceAtlasLayout;
-import org.gephi.layout.plugin.forceAtlas2.ForceAtlas2;
-import org.gephi.layout.plugin.forceAtlas2.ForceAtlas2Builder;
-import org.gephi.preview.api.PreviewController;
-import org.gephi.preview.api.PreviewModel;
-import org.gephi.preview.api.PreviewProperty;
-import org.gephi.preview.types.EdgeColor;
-import org.gephi.project.api.*;
-import org.gephi.ranking.api.*;
-import org.gephi.ranking.plugin.transformer.*;
-import org.gephi.partition.api.*;
-import org.gephi.partition.plugin.NodeColorTransformer;
-import org.gephi.statistics.plugin.*;
-
-import org.openide.util.Lookup;
-
-import org.gephi.io.exporter.spi.CharacterExporter;
-
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.gephi.filters.plugin.graph.KCoreBuilder;
 
 /**
@@ -67,11 +13,66 @@ import org.gephi.filters.plugin.graph.KCoreBuilder;
 
 public class ScoringApp extends App
 {
-
+    private int numNodes;
+    private int numEdges;
+    private double clusteringCoefficient;
+    private int kCore;
+    private int kCoreSize;
+    @Override
+    protected void generateResult() {
+        numNodes = undirectedGraph.getNodeCount();
+        numEdges = undirectedGraph.getEdgeCount();
+        clusteringCoefficient = numEdges/(numNodes*(numNodes-1)*0.5);
+        
+        System.out.println("Total number of Nodes: " + numNodes);
+        System.out.println("Total number of Edges: " + numEdges);
+        System.out.println("Clustering Coefficient: "+ clusteringCoefficient);
+        
+        //calculating KCore
+        GraphView tview = graphModel.newView();
+        UndirectedGraph tgraph = graphModel.getUndirectedGraph(tview);
+        KCoreBuilder.KCoreFilter kCoreFilter = new KCoreBuilder.KCoreFilter();
+        int k = 1;
+        
+        while (tgraph.getNodeCount() > 0){
+            kCoreSize = tgraph.getNodeCount();
+            kCoreFilter.setK(k);
+            kCoreFilter.filter(tgraph);
+//            System.out.println("After KCore Filtering, K" + k +" Nodes: " + tgraph.getNodeCount());
+//            System.out.println("Edges: " + tgraph.getEdgeCount());
+            k++;
+        }
+        kCore = k-1;
+        System.out.println("kCore: "+ kCore + " subgraph size: "+kCoreSize);
+        
+        
+        
+    }
+    
+    @Override
+    protected void exportToMongo() {
+        BasicDBObject mongo_query = new BasicDBObject("_id", this.fb_profile.get("_id"));
+        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("kCore", kCore));
+	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("kCoreSize", kCoreSize));
+	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("clusteringCoefficient", clusteringCoefficient));
+	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("degree", numNodes));
+	this.fb_profiles.update(mongo_query, updateCmd);
+    }
+    
+    /**
+     * 
+     */
+    @Override
     public void run() {
 
         //Init a project - and therefore a workspace
-        System.out.println("Run started...");
+        System.out.println("ScoringApp Run started...");
         try {
             mongoDB2Graph();
 //            add2Graph("4f63c6e23f033175fe000004");
@@ -82,10 +83,10 @@ public class ScoringApp extends App
         
         System.out.println("From formed graph, Nodes: "+undirectedGraph.getNodeCount()+" Edges: "+undirectedGraph.getEdgeCount());
 
-        System.out.println("Start gen graph...");
+        System.out.println("Start calculating scores...");
         generateResult();
         
-        System.out.println("Start export graph...");
+        System.out.println("Start export scores to MongoDB...");
         exportToMongo();
         System.out.println("Done...");
     }
