@@ -324,12 +324,16 @@ public class VizApp extends App
         
         // Improve colors -- prefer some neon colors that shine on black background
         NodeColorTransformer nodeColorTransformer2 = new NodeColorTransformer();
-        int i=0;
         Map<Object, Color> color_map = nodeColorTransformer2.getMap();
+	setColorsAndSaveLabelsToMongo(p2, color_map);
         
+        partitionController.transform(p2, nodeColorTransformer2);
+    }
+
+    private void setColorsAndSaveLabelsToMongo(Partition p2, Map<Object, Color> color_map) throws MongoException {
         // build up linear array for colors to store in MongoDB
-        ArrayList<BasicDBObject> colors_for_mongo = new ArrayList<BasicDBObject>();
-                
+        ArrayList<BasicDBObject> labels_for_mongo = new ArrayList<BasicDBObject>();
+        int i=0;
         for (Part p : p2.getParts()) {
             Color color = Palette.colors[i];
             color_map.put(p.getValue(), color);
@@ -337,19 +341,22 @@ public class VizApp extends App
             color_hash.put("r", color.getRed());
             color_hash.put("g", color.getGreen());
             color_hash.put("b", color.getBlue());
-            colors_for_mongo.add(color_hash);
+            BasicDBObject label_for_mongo = new BasicDBObject();
+            label_for_mongo.put("name", "Label me #" + (i+1));
+            label_for_mongo.put("group_index", i);
+            label_for_mongo.put("color", color_hash);
+            labels_for_mongo.add(label_for_mongo);
             ++i;
         }
         
         //        nodeColorTransformer2.randomizeColors(p2);
         //        printMap(nodeColorTransformer2.getMap());
 
-        // save colors to MongoDB
+        // save new labels to MongoDB
+        // TODO: WARNING -- THIS WILL WIPE OUT EXISTING LABELS!!!
         BasicDBObject mongo_query = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("label_colors", colors_for_mongo));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        partitionController.transform(p2, nodeColorTransformer2);
+        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("labels", labels_for_mongo));
+        this.fb_profiles.update(mongo_query, updateCmd);
     }
     
     private void reportStatistics(int[] arr){
