@@ -181,6 +181,9 @@ public class ScoringApp extends App
         double xi= 20;
         System.out.println(xi + " interp to " + MeanClusteringCoefficientTable.interp(xi));
         System.out.println(xi + " interp to " + LowerClusteringCoefficientTable.interp(xi));
+        System.out.println(xi + " interp to " + UpperClusteringCoefficientTable.interp(xi));
+        
+        
     }
     
     /**
@@ -291,12 +294,12 @@ class LowerClusteringCoefficientTable extends MyTable{
 class UpperClusteringCoefficientTable extends MyTable{
 
     
-    static double X[]={};
-    static double Y[]={};
-    static double degree[]={};
-    static double CC[]={};
-    static double logDegree[]={};
-    static double logCC[]={};
+    static double X[]={118,157,186,201,229,254,278,308,341,382,416,448,474,492,510,526,548,562,572,574,576};
+    static double Y[]={41,41,42,51,62,76,93,109,125,139,146,156,168,184,204,224,244,268,277,298,326};
+    static double degree[]={1.984315,3.865788,6.347489,8.203462,13.241427,20.304551,30.607344,51.122958,89.884609,181.203024,324.086651,560.149763,873.753855,1188.675469,1617.102301,2125.979153,3096.98123,3934.661642,4668.429805,4830.849653,4998.920267};
+    static double CC[]={0.99567207,0.99567207,0.98345876,0.88006477,0.76833882,0.64641349,0.52406788,0.43015486,0.35307107,0.29704331,0.27245739,0.24082241,0.20767053,0.17045595,0.13317073,0.10404121,0.08128343,0.06044467,0.05408994,0.04174005,0.02954392};
+    static double logDegree[]={0.6852737,1.3521655,1.8480594,2.1045562,2.5833503,3.010845,3.42124,3.9342337,4.4985267,5.1996181,5.7810109,6.3282042,6.7727987,7.0805949,7.3883911,7.6619878,8.0381831,8.2775802,8.4485781,8.4827776,8.5169772};
+    static double logCC[]={-0.004337327,-0.004337327,-0.016679572,-0.127759777,-0.263524472,-0.436315902,-0.646134067,-0.843609987,-1.041085907,-1.213877337,-1.300273052,-1.423695502,-1.571802442,-1.769278362,-2.016123262,-2.262968162,-2.509813062,-2.806026942,-2.917107147,-3.176294292,-3.521877152};
 
     public static double interp(double x){
         double[] xlist = new double[1];
