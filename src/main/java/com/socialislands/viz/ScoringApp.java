@@ -29,6 +29,13 @@ public class ScoringApp extends App
     double averageClusteringCoefficient;
     private int kCore;
     private int kCoreSize;
+    private double clusteringCoefficientMean;
+    private double clusteringCoefficientLower;
+    private double clusteringCoefficientUpper;
+    private double kCoremean;
+    private double kCoreLower;
+    private double kCoreUpper;
+    
     
     @Override
     protected void mongoDB2Graph()  throws Exception {
@@ -128,8 +135,21 @@ public class ScoringApp extends App
         kCore = k-1;
         System.out.println("kCore: "+ kCore + " subgraph size: "+kCoreSize);
         
+        clusteringCoefficientMean=MeanClusteringCoefficientTable.interp(numNodes);
+        clusteringCoefficientLower=LowerClusteringCoefficientTable.interp(numNodes);
+        clusteringCoefficientUpper=UpperClusteringCoefficientTable.interp(numNodes);
+        kCoremean=MeanKCoreTable.interp(numNodes);
+        kCoreLower=LowerKCoreTable.interp(numNodes);
+        kCoreUpper=UpperKCoreTable.interp(numNodes);
         
         
+        System.out.println("lower CC " + clusteringCoefficientLower);
+        System.out.println("mean CC " + clusteringCoefficientMean);
+        System.out.println("upper CC " + clusteringCoefficientUpper);
+        System.out.println("lower KC " + kCoreLower);
+        System.out.println("mean KC " + kCoremean);
+        System.out.println("upper KC " + kCoreUpper);
+      
     }
     
     @Override
@@ -149,6 +169,26 @@ public class ScoringApp extends App
         
         updateCmd = new BasicDBObject("$set", new BasicDBObject("averageClusteringCoefficient", averageClusteringCoefficient));
 	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("clusteringCoefficientMean", clusteringCoefficientMean));
+	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("clusteringCoefficientLower", clusteringCoefficientLower));
+	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("clusteringCoefficientUpper", clusteringCoefficientUpper));
+	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("kCoremean", kCoremean));
+	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("kCoreLower", kCoreLower));
+	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("kCoreUpper", kCoreUpper));
+	this.fb_profiles.update(mongo_query, updateCmd);
+        
+        
         
     }
     
@@ -176,16 +216,6 @@ public class ScoringApp extends App
         System.out.println("Start export scores to MongoDB...");
         exportToMongo();
         System.out.println("Done...");
-        
-//        MeanClusteringCoefficientTable mCCTable= new MeanClusteringCoefficientTable();
-        double xi= 1000;
-        System.out.println(xi + " mean CC " + MeanClusteringCoefficientTable.interp(xi));
-        System.out.println(xi + " lower CC " + LowerClusteringCoefficientTable.interp(xi));
-        System.out.println(xi + " upper CC " + UpperClusteringCoefficientTable.interp(xi));
-        System.out.println(xi + " mean KC " + MeanKCoreTable.interp(xi));
-        System.out.println(xi + " lower KC " + LowerKCoreTable.interp(xi));
-        System.out.println(xi + " upper KC " + UpperKCoreTable.interp(xi));
-        
         
     }
     
