@@ -178,10 +178,13 @@ public class ScoringApp extends App
         System.out.println("Done...");
         
 //        MeanClusteringCoefficientTable mCCTable= new MeanClusteringCoefficientTable();
-        double xi= 20;
-        System.out.println(xi + " interp to " + MeanClusteringCoefficientTable.interp(xi));
-        System.out.println(xi + " interp to " + LowerClusteringCoefficientTable.interp(xi));
-        System.out.println(xi + " interp to " + UpperClusteringCoefficientTable.interp(xi));
+        double xi= 1000;
+        System.out.println(xi + " mean CC " + MeanClusteringCoefficientTable.interp(xi));
+        System.out.println(xi + " lower CC " + LowerClusteringCoefficientTable.interp(xi));
+        System.out.println(xi + " upper CC " + UpperClusteringCoefficientTable.interp(xi));
+        System.out.println(xi + " mean KC " + MeanKCoreTable.interp(xi));
+        System.out.println(xi + " lower KC " + LowerKCoreTable.interp(xi));
+        System.out.println(xi + " upper KC " + UpperKCoreTable.interp(xi));
         
         
     }
@@ -308,5 +311,65 @@ class UpperClusteringCoefficientTable extends MyTable{
         return Math.exp(val[0]);
     }
     public UpperClusteringCoefficientTable(){
+    }
+}
+
+
+class MeanKCoreTable extends MyTable{
+
+    static double X[]={734,758,781,805,829,854,880,913,946,979,1009,1037,1064,1086,1116,1140,1168,1188};
+    static double Y[]={400,384,362,338,313,294,276,257,238,218,197,178,159,146,135,129,121,115};
+    static double degree[]={1.98395,2.989028,4.427031,6.669784,10.048725,15.400215,24.008181,42.180155,74.106634,130.198505,217.322657,350.566772,555.929676,809.442118,1351.091644,2035.560505,3283.596305,4620.430388};
+    static double CC[]={0.5176533,0.7086363,1.0913196,1.7479484,2.8551522,4.1455844,5.9022587,8.5698801,12.4431762,18.4251817,27.8237932,40.3992071,58.6582829,75.7079856,93.9519899,105.6939532,123.6637335,139.1190212};
+    static double logDegree[]={0.6850899,1.0949482,1.4877291,1.8975874,2.3074457,2.7343815,3.1783947,3.7419499,4.3055051,4.8690602,5.3813831,5.8595512,6.3206418,6.6963453,7.2086682,7.6185265,8.0966945,8.4382431};
+    static double logCC[]={-0.65844965,-0.34441291,0.08738762,0.55844273,1.04912514,1.42204377,1.77533511,2.14825374,2.52117237,2.9137183,3.32589153,3.69881016,4.07172879,4.32688364,4.54278391,4.66054768,4.81756606,4.93532983};
+
+    public static double interp(double x){
+        double[] xlist = new double[1];
+        xlist[0] = Math.log(x);
+        double[] val = interpLinear(logDegree, logCC, xlist);
+        return Math.exp(val[0]);
+    }
+    public MeanKCoreTable(){
+    }
+}
+
+
+class LowerKCoreTable extends MyTable{
+
+    static double X[]={806,808,868,874,899,902,918,923,937,957,982,1008,1035,1064,1092,1120,1138,1162,1183};
+    static double Y[]={424,366,367,333,331,311,310,297,292,277,264,248,228,213,199,192,192,193,194};
+    static double degree[]={6.784664,7.020397,19.559586,21.670028,33.210492,34.95628,45.940037,50.03507,63.548804,89.42111,137.042697,213.642855,338.795382,555.929676,896.779352,1446.6096,1967.210114,2963.807252,4242.279352};
+    static double CC[]={0.3231933,1.008918,0.9893087,1.9281851,2.0053805,2.9694589,3.028317,3.9085321,4.3115539,5.7875428,7.4697585,10.2256514,15.1415911,20.3250636,26.752741,30.6927972,30.6927972,30.096254,29.5113052};
+    static double logDegree[]={1.914665,1.94882,2.973466,3.07593,3.502866,3.554098,3.827337,3.912724,4.151808,4.493357,4.920293,5.364306,5.825396,6.320642,6.79881,7.276978,7.584372,7.99423,8.352856};
+    static double logCC[]={-1.129504764,0.008878429,-0.010748867,0.656579212,0.695833805,1.088379733,1.10800703,1.363161883,1.461298366,1.755707812,2.010862666,2.324899409,2.717445337,3.011854784,3.286636934,3.424028009,3.424028009,3.404400712,3.384773416};
+
+    public static double interp(double x){
+        double[] xlist = new double[1];
+        xlist[0] = Math.log(x);
+        double[] val = interpLinear(logDegree, logCC, xlist);
+        return Math.exp(val[0]);
+    }
+    public LowerKCoreTable(){
+    }
+}
+
+
+class UpperKCoreTable extends MyTable{
+
+    static double X[]={734,758,777,795,823,848,876,907,938,972,1004,1029,1058,1086,1122,1150,1169,1184};
+    static double Y[]={366,367,328,304,280,259,244,225,206,186,164,145,127,112,99,90,83,79};
+    static double degree[]={1.98395,2.989028,4.134719,5.622706,9.070081,13.90039,22.422949,38.072235,64.643374,115.528614,199.536265,305.80014,501.787751,809.442118,1496.871812,2414.628668,3340.153241,4315.348723};
+    static double CC[]={1.008918,0.9893087,2.1270067,3.4067911,5.4566002,8.2399901,11.060814,16.059928,23.3184725,34.5287319,53.1752099,77.2086071,109.9254355,147.5565841,190.4455977,227.2412538,260.708603,282.0015326};
+    static double logDegree[]={0.6850899,1.0949482,1.4194194,1.7268131,2.2049812,2.6319169,3.1100849,3.6394853,4.1688856,4.7495182,5.295996,5.7229318,6.2181772,6.6963453,7.3111328,7.7893008,8.113772,8.3699334};
+    static double logCC[]={0.008878429,-0.010748867,0.754715694,1.225770808,1.696825923,2.108999148,2.403408594,2.776327227,3.149245859,3.541791787,3.973592309,4.346510941,4.699802277,4.994211724,5.249366577,5.426012245,5.56340332,5.641912506};
+
+    public static double interp(double x){
+        double[] xlist = new double[1];
+        xlist[0] = Math.log(x);
+        double[] val = interpLinear(logDegree, logCC, xlist);
+        return Math.exp(val[0]);
+    }
+    public UpperKCoreTable(){
     }
 }
