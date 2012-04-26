@@ -116,7 +116,6 @@ public class ScoringApp extends App
         ClusteringCoefficient clusteringCoefficient = new ClusteringCoefficient();
         clusteringCoefficient.execute(graphModel, attributeModel);
         averageClusteringCoefficient = clusteringCoefficient.getAverageClusteringCoefficient();
-        System.out.println("Average Clustering Coefficient: " + averageClusteringCoefficient);
         
         //calculating KCore
         GraphView tview = graphModel.newView();
@@ -133,7 +132,6 @@ public class ScoringApp extends App
             k++;
         }
         kCore = k-1;
-        System.out.println("kCore: "+ kCore + " subgraph size: "+kCoreSize);
         
         clusteringCoefficientMean=MeanClusteringCoefficientTable.interp(numNodes);
         clusteringCoefficientLower=LowerClusteringCoefficientTable.interp(numNodes);
@@ -143,9 +141,12 @@ public class ScoringApp extends App
         kCoreUpper=UpperKCoreTable.interp(numNodes);
         
         
+        System.out.println("======Average Clustering Coefficient: " + averageClusteringCoefficient);
         System.out.println("lower CC " + clusteringCoefficientLower);
         System.out.println("mean CC " + clusteringCoefficientMean);
         System.out.println("upper CC " + clusteringCoefficientUpper);
+        
+        System.out.println("======kCore: "+ kCore + " subgraph size: "+kCoreSize);
         System.out.println("lower KC " + kCoreLower);
         System.out.println("mean KC " + kCoremean);
         System.out.println("upper KC " + kCoreUpper);
@@ -237,7 +238,16 @@ class MyTable{
     }
     
     public static double[] interpLinear(double[] x, double[] y, double[] xi) throws IllegalArgumentException {
-
+        //added by Weidong Yang, to deal with lower and upper boundary limitations.
+        for (int i = 0; i < xi.length; i++) {
+            if (xi[i] > x[x.length - 1]) {
+                 xi[i] = x[x.length -1];
+            }else if(xi[i] < x[0]) {
+                xi[i]=x[0];
+            }
+        }
+           
+        
         if (x.length != y.length) {
             throw new IllegalArgumentException("X and Y must be the same length");
         }
