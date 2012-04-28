@@ -47,6 +47,16 @@
       <artifactId>commons-math3</artifactId>
       <version>3.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>4.1.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.1.3</version>
+    </dependency>
   </dependencies>
   
   <build>
@@ -59,8 +69,12 @@
             <assembleDirectory>target</assembleDirectory> 
             <programs>
                 <program>
-                    <mainClass>com.socialislands.viz.Jesque</mainClass>
+                    <mainClass>com.socialislands.viz.JesqueViz</mainClass>
                     <name>social_islands_viz</name>
+                </program>
+                <program>
+                    <mainClass>com.socialislands.viz.JesqueScoring</mainClass>
+                    <name>social_islands_score</name>
                 </program>
             </programs>
           </configuration>

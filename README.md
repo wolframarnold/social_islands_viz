@@ -56,7 +56,8 @@ Run -> Set Project Configuration -> Customize -> Run -> Main class
 
 set this to: `com.socialislands.viz.StandAlone` for stand-alone
 
-or to: `com.socialislands.viz.Jesque` for Jesque operation.
+or to: `com.socialislands.viz.JesqueViz` or `com.socialislands.viz.JesqueScoring`,
+respectively, for Jesque operation of the Viz or Scoring apps.
 
 Running Jesque from the command line
 ------------------------------------

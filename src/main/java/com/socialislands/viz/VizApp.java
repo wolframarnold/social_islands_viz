@@ -6,6 +6,7 @@ import java.awt.Color;
 import java.io.*;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.gephi.data.attributes.api.AttributeColumn;
@@ -37,6 +38,15 @@ import org.openide.util.Lookup;
 import org.gephi.io.exporter.spi.CharacterExporter;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+
 import org.gephi.filters.plugin.graph.KCoreBuilder;
 
 /**
@@ -374,7 +384,29 @@ public class VizApp extends App
         BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
         BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("graph", result));
  
+        // There seems to be a race-condition here -- this may need to be an atomic operation
 	this.fb_profiles.update(query, updateCmd);
+    }
+    
+    // make an HTTP Post with the facebook profile id to the frontend
+    // which notifies it that the graph is ready
+    private void notifyFrontend() {
+        
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpPost post = new HttpPost("http://localhost:3000/push_to_web/graph_ready");
+
+        List<NameValuePair> data = new ArrayList<NameValuePair>(1);
+        data.add(new BasicNameValuePair("facebook_profile_id", this.fb_profile.get("_id").toString()));
+        
+        try {
+           post.setEntity(new UrlEncodedFormEntity(data));
+           HttpResponse response = httpclient.execute(post);
+        } catch (ClientProtocolException e) {
+            System.out.println("ERROR--ClientProtocolException: "+e.getMessage());
+        } catch (IOException e) {
+            System.out.println("ERROR--IOException: "+e.getMessage());
+        }
+        
     }
     
     /**
@@ -400,6 +432,8 @@ public class VizApp extends App
         
         System.out.println("Start export graph...");
         exportToMongo();
+        System.out.println("Pinging frontend");
+        notifyFrontend();
         System.out.println("Done...");
     }
     
