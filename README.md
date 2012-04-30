@@ -9,6 +9,33 @@ This tool uses gephi to generate an svg file of the friends graph. The data is r
 This project is also configured for building with Maven, in preparation for deployment on Heroku.
 It can be built and run directly from NetBeans.
 
+Environments & Configuration
+============================
+
+I've adopted the Rails conventions about different environments for the Java
+app as well. The app looks for a System Property `APP_ENV` or if not
+set, an Environment Variable by the same name. If neither is found, then the environment
+defaults to `development`. They can be set to `test` for testing (not currently used)
+or `production`. On Heroku, we've set `APP_ENV` to `production`.
+
+This matters for setting MongoDB and Redis configurations. Configuration files
+for these live in `config/mongo.yml` and `config/redis.yml`, etc.
+
+The YAML files follow the Rails conventions of defining a stanza for each
+environment, e.g.
+
+    development:
+      host: http://localhost/...
+
+    production:
+      host: {{ MONGOHQ_URL }}
+      user: ...
+      password: ...
+
+Note that in the 2nd example, `{{ ... }}` can be used to expand to a System
+Property or Environment variable.
+
+
 Running Locally
 ===============
 
@@ -23,41 +50,20 @@ The project needs a few Java libraires, but NetBeans should download all the
 required dependencies during compilation.
 
 In order to connect to your local MongoDB instance, the connection parameters
-need to be passed through an environment variable or a Java system property.
+are specified in `config/mongo.yml`. For local operation `APP_ENV` should
+be blank or set to `development`. (On Heorku `APP_ENV` is set to `production`.)
 
-Heroku will use environment variables to set the MongoDB connection parameters,
-but that's not easy to do for an IDE like NetBeans. So, if the `MONGOHO_URL`
-environment variable is not set, it'll try to look for a Java system
-property by the same name.
 
 Running inside NetBeans
 -----------------------
 
-To set a Java system property in NetBeans, add it here:
+Specify the main class in:
 
 Run -> Set Project Configuration -> Customize -> Run
 
-In the "VM Options" field, add:
+You can choose Jesque operation or Standalone mode. Standalone mode is for
+command line testing and it won't take jobs from Jesque.
 
-    -DMONGOHQ_URL="mongodb://:@127.0.0.1:27017/trust_exchange_development"
-
-Note: Instead of `127.0.0.1`, you can also try `localhost`, if it doesn't work.
-
-Running Standalone (without Jesque) with NetBeans
--------------------------------------------------
-
-The default operation for the app is to listen on Jesque and take user_id's
-from there to process.
-
-If you want to run the app stand-alone, set this in the Run configuration in
-NetBeans:
-
-Run -> Set Project Configuration -> Customize -> Run -> Main class
-
-set this to: `com.socialislands.viz.StandAlone` for stand-alone
-
-or to: `com.socialislands.viz.JesqueViz` or `com.socialislands.viz.JesqueScoring`,
-respectively, for Jesque operation of the Viz or Scoring apps.
 
 Running Jesque from the command line
 ------------------------------------
@@ -73,5 +79,4 @@ it execute permissions:
 
 Then run it with the `MONGOHQ_URL` set:
 
-    MONGOHQ_URL="mongodb://:@127.0.0.1:27017/trust_exchange_development" target/bin/social_islands_viz
-
+    target/bin/social_islands_viz

@@ -2,7 +2,7 @@ package com.socialislands.viz;
 
 import com.mongodb.*;
 import java.net.UnknownHostException;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Arrays;
 
@@ -51,7 +51,7 @@ public class ScoringApp extends App
         BasicDBList friends = (BasicDBList) this.fb_profile.get("friends");
         
         nodes = new Node[friends.size()*2];
-        friendHash = new Hashtable<Long, Integer>();
+        friendHash = new HashMap<Long, Integer>();
         
         Iterator itr = friends.iterator(); 
         BasicDBObject friend = new BasicDBObject();
@@ -88,8 +88,8 @@ public class ScoringApp extends App
             long node1 = Long.valueOf(edge.get("uid1").toString());
             long node2 = Long.valueOf(edge.get("uid2").toString());
             if (node2 > node1){ // skip symmetrical edges
-                int idx1 = friendHash.get(node1);
-                int idx2 = friendHash.get(node2);
+                int idx1 = (Integer)friendHash.get(node1);
+                int idx2 = (Integer)friendHash.get(node2);
                 Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
                 undirectedGraph.addEdge(e1);
             }

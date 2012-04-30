@@ -384,8 +384,7 @@ public class VizApp extends App
         BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
         BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("graph", result));
  
-        // There seems to be a race-condition here -- this may need to be an atomic operation
-	this.fb_profiles.update(query, updateCmd);
+ 	this.fb_profiles.update(query, updateCmd);
     }
     
     // make an HTTP Post with the facebook profile id to the frontend
@@ -393,7 +392,9 @@ public class VizApp extends App
     private void notifyFrontend() {
         
         HttpClient httpclient = new DefaultHttpClient();
-        HttpPost post = new HttpPost("http://localhost:3000/push_to_web/graph_ready");
+        String notify_url = (new YamlConfig("frontend_server.yml")).propertiesForCurrentEnv().getProperty("uri");
+        
+        HttpPost post = new HttpPost(notify_url);
 
         List<NameValuePair> data = new ArrayList<NameValuePair>(1);
         data.add(new BasicNameValuePair("facebook_profile_id", this.fb_profile.get("_id").toString()));

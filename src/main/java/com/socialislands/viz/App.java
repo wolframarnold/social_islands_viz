@@ -4,8 +4,9 @@ import com.mongodb.*;
 import org.bson.types.ObjectId;
 
 import java.net.UnknownHostException;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.gephi.graph.api.Edge;
 import org.gephi.graph.api.GraphController;
@@ -34,7 +35,7 @@ public class App implements Runnable
     protected DBObject user;
     protected String userName;
     protected long userUid;
-    protected Hashtable<Long, Integer> friendHash;
+    protected Map friendHash;
     protected Node[] nodes;
     protected Mongo m;
     protected DB db;
@@ -52,7 +53,7 @@ public class App implements Runnable
         BasicDBList friends = (BasicDBList) this.fb_profile.get("friends");
         
         nodes = new Node[friends.size()*2];
-        friendHash = new Hashtable<Long, Integer>();
+        friendHash = new HashMap<Long, Integer>();
         
         Iterator itr = friends.iterator(); 
         BasicDBObject friend = new BasicDBObject();
@@ -94,8 +95,8 @@ public class App implements Runnable
             long node1 = Long.valueOf(edge.get("uid1").toString());
             long node2 = Long.valueOf(edge.get("uid2").toString());
             if (node2 > node1){ // skip symmetrical edges
-                int idx1 = friendHash.get(node1);
-                int idx2 = friendHash.get(node2);
+                int idx1 = (Integer)friendHash.get(node1);
+                int idx2 = (Integer)friendHash.get(node2);
                 Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
                 undirectedGraph.addEdge(e1);
             }
@@ -129,14 +130,7 @@ public class App implements Runnable
     public App(final String s) throws UnknownHostException {
         this.user_id = s;
         
-        String mongo_url = System.getenv("MONGOHQ_URL");
-        if (mongo_url == null) {
-            mongo_url = System.getProperty("MONGOHQ_URL");
-        }
-        if (mongo_url == null) {
-            System.out.println("ERROR! Could not find Mongo connection parameters. Did you set MONGOHQ_URL as environmen variable or Java system parameter?");
-            return;
-        }
+        String mongo_url = (new YamlConfig("mongo.yml")).propertiesForCurrentEnv().getProperty("uri");
         MongoURI mongoURI = new MongoURI(mongo_url);
         this.db = mongoURI.connectDB();
         

@@ -18,14 +18,17 @@ public class JesqueWorker {
     protected static Config configureRedisConnection() {
         final ConfigBuilder jesque_config_builder = new ConfigBuilder();
         
-        String redis_url = System.getenv("REDISTOGO_URL");
+        String redis_url = (new YamlConfig("redis.yml")).propertiesForCurrentEnv().getProperty("uri");
         if (redis_url != null) {
             // use Heroku settings
             try {
                 URI redisURI = new URI(redis_url);
                 jesque_config_builder.withHost(redisURI.getHost());
                 jesque_config_builder.withPort(redisURI.getPort());
-                jesque_config_builder.withPassword(redisURI.getUserInfo().split(":",2)[1]);
+                String user_info = redisURI.getUserInfo();
+                if (user_info != null) {
+                  jesque_config_builder.withPassword(user_info.split(":",2)[1]);
+                }
             }
             catch (URISyntaxException e) {
                 System.out.println("ERROR! Parsing of Redis URL failed: " + e.getMessage());

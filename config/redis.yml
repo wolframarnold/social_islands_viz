@@ -1,0 +1,13 @@
+# Redis config. This should be the same as in the Rails app,
+# so that the two can connect.
+# Note that in the Java app, we can use {{ ... }} to expand a
+# System property or environment variable
+
+development:
+  uri: redis://localhost:6379
+  
+test:
+  uri: redis://localhost:6379
+
+production:
+  uri: {{ REDISTOGO_URL }}

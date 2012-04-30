@@ -1,0 +1,10 @@
+## YAML Template.
+---
+development:
+  uri: http://localhost:3000/push_to_web/graph_ready
+  
+test:
+  uri: http://localhost:3000/push_to_web/graph_ready
+  
+production:
+  uri: http://social-islands.heroku.com/push_to_web/graph_ready

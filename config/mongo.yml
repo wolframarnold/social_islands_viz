@@ -1,0 +1,14 @@
+# MongoDB config. This should be the same as in the Rails app,
+# so that the two can connect.
+# Note that in the Java app, we can use {{ ... }} to expand a
+# System property or environment variable
+
+development:
+  uri: "mongodb://:@127.0.0.1:27017/trust_exchange_development"
+
+test:
+  uri: "mongodb://:@127.0.0.1:27017/trust_exchange_test"
+
+# set these environment variables on your prod server
+production:
+  uri: {{ MONGOHQ_URL }}
