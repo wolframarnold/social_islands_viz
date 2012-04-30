@@ -178,32 +178,7 @@ public class VizApp extends App
         UndirectedGraph graphVisible = graphModel.getUndirectedGraphVisible();
         System.out.println("After Filtering, Nodes: " + graphVisible.getNodeCount());
         System.out.println("Edges: " + graphVisible.getEdgeCount() + "    start layout...");
-        
-        // TODO ----------------------------------------
-        // MOVE the KCore stuff into ScoringApp
-        // TODO ----------------------------------------
-        
-        //calculating KCore
-        GraphView tview = graphModel.newView();
-        UndirectedGraph tgraph = graphModel.getUndirectedGraph(tview);
-        KCoreBuilder.KCoreFilter kCoreFilter = new KCoreBuilder.KCoreFilter();
-        int k = 1;
-        while (tgraph.getNodeCount() > 0){
-            kCoreFilter.setK(k);
-            kCoreFilter.filter(tgraph);
-            System.out.println("After KCore Filtering, K" + k +" Nodes: " + tgraph.getNodeCount());
-            System.out.println("Edges: " + tgraph.getEdgeCount());
-            k++;
-        }
-        int kCore = k-1;
-        
-        BasicDBObject mongo_query_kcore = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmdkCore = new BasicDBObject("$set", new BasicDBObject("kcore", kCore));
-	this.fb_profiles.update(mongo_query_kcore, updateCmdkCore);
-        
-        graphModel.setVisibleView(view);
-        
-        
+       
         //Layout for 1 minute
 //        AutoLayout autoLayout = new AutoLayout(40, TimeUnit.SECONDS);
 //        autoLayout.setGraphModel(graphModel);
