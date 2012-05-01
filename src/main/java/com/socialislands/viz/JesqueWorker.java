@@ -43,6 +43,12 @@ public class JesqueWorker {
     
     protected static void clearWorkerFromRedis(final String queueName, final Config config) {
         Jedis jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+        if (config.getPassword() != null)
+        {
+                jedis.auth(config.getPassword());
+        }
+        jedis.select(config.getDatabase());
+
         
         String key = config.getNamespace() + ":" +  ResqueConstants.WORKERS;
         Set<String> workers = jedis.smembers(key);
