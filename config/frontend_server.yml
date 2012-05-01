@@ -7,4 +7,4 @@ test:
   uri: http://localhost:3000/push_to_web/graph_ready
   
 production:
-  uri: http://social-islands.heroku.com/push_to_web/graph_ready
+  uri: http://social-islands.herokuapp.com/push_to_web/graph_ready

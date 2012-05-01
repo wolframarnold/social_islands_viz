@@ -318,10 +318,11 @@ public class VizApp extends App
     private void setColorsAndSaveLabelsToMongo(Partition p2, Map<Object, Color> color_map) throws MongoException {
         // build up linear array for colors to store in MongoDB
         ArrayList<BasicDBObject> labels_for_mongo = new ArrayList<BasicDBObject>();
-        int i=0;
         for (Part p : p2.getParts()) {
+            int i = (Integer) p.getValue();
             Color color = Palette.colors[i];
-            color_map.put(p.getValue(), color);
+            color_map.put(i, color);
+            
             BasicDBObject color_hash = new BasicDBObject();
             color_hash.put("r", color.getRed());
             color_hash.put("g", color.getGreen());
@@ -331,7 +332,6 @@ public class VizApp extends App
             label_for_mongo.put("group_index", i);
             label_for_mongo.put("color", color_hash);
             labels_for_mongo.add(label_for_mongo);
-            ++i;
         }
         
         //        nodeColorTransformer2.randomizeColors(p2);
