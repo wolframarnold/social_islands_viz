@@ -66,7 +66,7 @@ public class YamlConfig {
                     // got a string expansion to look up
                     val = YamlConfig.getSystemPropertyOrEnvironmentVariable(m.group(1));
                 }
-                System.out.println(key + " = " + val);
+                System.out.println(config_file + ": settings for environment: " + key + " = " + val);
                 props.setProperty(key,val);
             }            
             return props;

@@ -10,4 +10,4 @@ test:
   uri: redis://localhost:6379
 
 production:
-  uri: {{ REDISTOGO_URL }}
+  uri: "{{ REDISTOGO_URL }}"

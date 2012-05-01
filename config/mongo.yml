@@ -11,4 +11,4 @@ test:
 
 # set these environment variables on your prod server
 production:
-  uri: {{ MONGOHQ_URL }}
+  uri: "{{ MONGOHQ_URL }}"
