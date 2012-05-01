@@ -22,7 +22,7 @@ import org.openide.util.Lookup;
  * @author weidongyang
  */
 
-public class App implements Runnable
+public abstract class App implements Runnable
 {
    protected ProjectController pc;
     protected Workspace workspace;
@@ -88,7 +88,7 @@ public class App implements Runnable
         System.out.println(edges.toArray()[0].getClass().getName());
         
         itr = edges.iterator(); 
-        BasicDBObject edge = new BasicDBObject();
+        BasicDBObject edge;
         while(itr.hasNext()) {
 
             edge = (BasicDBObject) itr.next(); 
@@ -113,14 +113,12 @@ public class App implements Runnable
         System.out.println(edges.size());
     }
     
-    protected void generateResult() {
-    }
+    // Abstract methods -- required to be implemented by subclasses
+    protected abstract void generateResult();
 
-    protected void exportToMongo() {
-    }
+    protected  abstract void exportToMongo();
     
-    public void run() {
-    }
+    public abstract void run();
     
     /**
      * 
@@ -162,7 +160,6 @@ public class App implements Runnable
             this.userName = user.get("name").toString();
 
             this.userUid = Long.valueOf(user.get("uid").toString());        
-            run();        
         }
         catch(java.util.NoSuchElementException e) {
             System.out.println("Could not find record in facebook_profiles or users collection with user_id: "+this.user_id);

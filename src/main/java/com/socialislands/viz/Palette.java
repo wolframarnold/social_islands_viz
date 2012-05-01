@@ -22,6 +22,14 @@ public class Palette {
         new Color(0xFF6666),
         new Color(0x66B3FF),
         new Color(0xFF66FF),
-        new Color(0xFF2929)
+        new Color(0xFF2929),
+        new Color(0xFFFFFF),  // TODO: fill these in with better colors
+        new Color(0xFFFFFF),
+        new Color(0xFFFFFF),
+        new Color(0xFFFFFF),
+        new Color(0xFFFFFF),
+        new Color(0xFFFFFF),
+        new Color(0xFFFFFF),
+        new Color(0xFFFFFF),
     };
 }
