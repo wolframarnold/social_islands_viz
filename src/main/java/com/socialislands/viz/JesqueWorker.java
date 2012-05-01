@@ -6,8 +6,11 @@ package com.socialislands.viz;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Set;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
+import net.greghaines.jesque.utils.ResqueConstants;
+import redis.clients.jedis.Jedis;
 
 /**
  *
@@ -36,5 +39,20 @@ public class JesqueWorker {
         }
         
         return jesque_config_builder.build();
-    }      
+    }     
+    
+    protected static void clearWorkerFromRedis(final String queueName, final Config config) {
+        Jedis jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+        
+        String key = config.getNamespace() + ":" +  ResqueConstants.WORKERS;
+        Set<String> workers = jedis.smembers(key);
+        
+        String prefix = config.getNamespace() + ":" +  ResqueConstants.WORKER;
+        for(String worker : workers) {
+            if (worker.matches(".*"+queueName+".*")) {
+                jedis.srem(key, worker);
+            }
+        }
+    }
+
 }

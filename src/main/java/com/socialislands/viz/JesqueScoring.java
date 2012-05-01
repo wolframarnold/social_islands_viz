@@ -9,7 +9,6 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 import static net.greghaines.jesque.utils.JesqueUtils.*;
-import redis.clients.jedis.Jedis;
 
 
 /**
@@ -24,10 +23,8 @@ public class JesqueScoring extends JesqueWorker {
         // Because we currently don't stop workers properly by calling end()
         // when the program exists or is aborted somehow, we need to clean
         // the queues prior to start up.
-        // TODO: This will wipe out any worker registration done by the viz app
-        // and vice versa -- we should figure out how to clean up properly.
-        Jedis jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-        jedis.flushDB();
+        // TODO: This will wipe out any worker registration done for this queue.
+        clearWorkerFromRedis("scoring", config);   
         
         final Worker worker = new WorkerImpl(config,
                 Arrays.asList("scoring"), 
@@ -37,5 +34,5 @@ public class JesqueScoring extends JesqueWorker {
         System.out.println("Starting Scoring Worker thread");
         t.start();
         t.join();
-    }    
+    }
 }
