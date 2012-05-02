@@ -150,16 +150,8 @@ public abstract class App implements Runnable
         
         try {
             this.fb_profile = cursor.next();
-
-            this.users = db.getCollection("users");
-            BasicDBObject queryb = new BasicDBObject();
-            queryb.put("_id", new ObjectId(this.user_id));
-
-            cursor = users.find(queryb);
-            this.user = cursor.next();
-            this.userName = user.get("name").toString();
-
-            this.userUid = Long.valueOf(user.get("uid").toString());        
+            this.userName = this.fb_profile.get("name").toString();
+            this.userUid = Long.valueOf(this.fb_profile.get("uid").toString());
         }
         catch(java.util.NoSuchElementException e) {
             System.out.println("Could not find record in facebook_profiles or users collection with user_id: "+this.user_id);
