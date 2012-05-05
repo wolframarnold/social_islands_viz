@@ -154,8 +154,8 @@ public class VizApp extends App
         PreviewModel model = Lookup.getDefault().lookup(PreviewController.class).getModel();
         FilterController filterController = Lookup.getDefault().lookup(FilterController.class);
         RankingController rankingController = Lookup.getDefault().lookup(RankingController.class); 
-        
-        System.out.println("inside genGraph, Nodes: " + undirectedGraph.getNodeCount());
+        int totalNodes = undirectedGraph.getNodeCount();
+        System.out.println("inside genGraph, Nodes: " + totalNodes);
         System.out.println("Edges: " + undirectedGraph.getEdgeCount());
 
         
@@ -176,10 +176,29 @@ public class VizApp extends App
         reportStatistics(degreeArray);
            
         //Filter      
+        //This is for preventing users with too few friends not being able to get any graph back.
+        //The larger the graph, the higher we filter the graph, so the image is not too cluttered.
+        int degreeFilterRange = 0;
+        if(totalNodes > 1000)
+            degreeFilterRange = 6;
+        else if(totalNodes > 800)
+            degreeFilterRange = 5;
+        else if(totalNodes > 600)
+            degreeFilterRange = 4;
+        else if(totalNodes > 400)
+            degreeFilterRange = 3;
+        else if(totalNodes > 200)
+            degreeFilterRange = 2;
+        else if(totalNodes > 100)
+            degreeFilterRange = 1;
+        else if(totalNodes > 50)
+            degreeFilterRange = 0;
+        
+        System.out.println("total node:"+totalNodes + " max degree:"+maxDegree + " filter by degree of:" + degreeFilterRange);
         System.out.println("Filter by degree...");
         DegreeRangeFilter degreeFilter = new DegreeRangeFilter();
         degreeFilter.init(undirectedGraph);
-        degreeFilter.setRange(new Range(4, Integer.MAX_VALUE));     //Remove nodes with degree < 30
+        degreeFilter.setRange(new Range(degreeFilterRange, Integer.MAX_VALUE));     //Remove nodes with degree < 30
         Query query = filterController.createQuery(degreeFilter);
         GraphView view = filterController.filter(query);
         graphModel.setVisibleView(view);    //Set the filter result as the visible view
