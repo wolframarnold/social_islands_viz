@@ -194,7 +194,7 @@ public class VizApp extends App
         else if(totalNodes > 50)
             degreeFilterRange = 0;
         
-        System.out.println("total node:"+totalNodes + " max degree:"+maxDegree + " filter by degree of:" + degreeFilterRange);
+        System.out.println("total node:"+ totalNodes + " filter by degree of:" + degreeFilterRange);
         System.out.println("Filter by degree...");
         DegreeRangeFilter degreeFilter = new DegreeRangeFilter();
         degreeFilter.init(undirectedGraph);
