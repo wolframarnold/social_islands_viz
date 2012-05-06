@@ -32,7 +32,7 @@ public class ScoringApp extends App
     private double clusteringCoefficientMean;
     private double clusteringCoefficientLower;
     private double clusteringCoefficientUpper;
-    private double kCoremean;
+    private double kCoreMean;
     private double kCoreLower;
     private double kCoreUpper;
     
@@ -136,7 +136,7 @@ public class ScoringApp extends App
         clusteringCoefficientMean=MeanClusteringCoefficientTable.interp(numNodes);
         clusteringCoefficientLower=LowerClusteringCoefficientTable.interp(numNodes);
         clusteringCoefficientUpper=UpperClusteringCoefficientTable.interp(numNodes);
-        kCoremean=MeanKCoreTable.interp(numNodes);
+        kCoreMean=MeanKCoreTable.interp(numNodes);
         kCoreLower=LowerKCoreTable.interp(numNodes);
         kCoreUpper=UpperKCoreTable.interp(numNodes);
         
@@ -148,7 +148,7 @@ public class ScoringApp extends App
         
         System.out.println("======kCore: "+ kCore + " subgraph size: "+kCoreSize);
         System.out.println("lower KC " + kCoreLower);
-        System.out.println("mean KC " + kCoremean);
+        System.out.println("mean KC " + kCoreMean);
         System.out.println("upper KC " + kCoreUpper);
       
     }
@@ -156,37 +156,37 @@ public class ScoringApp extends App
     @Override
     protected void exportToMongo() {
         BasicDBObject mongo_query = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("kCore", kCore));
+        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core", kCore));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("kCoreSize", kCoreSize));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core_size", kCoreSize));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("graphDensity", graphDensity));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("graph_density", graphDensity));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
         updateCmd = new BasicDBObject("$set", new BasicDBObject("degree", numNodes));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("averageClusteringCoefficient", averageClusteringCoefficient));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("average_clustering_coefficient", averageClusteringCoefficient));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("clusteringCoefficientMean", clusteringCoefficientMean));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("clustering_coefficient_mean", clusteringCoefficientMean));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("clusteringCoefficientLower", clusteringCoefficientLower));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("clustering_coefficient_lower", clusteringCoefficientLower));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("clusteringCoefficientUpper", clusteringCoefficientUpper));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("clustering_coefficient_upper", clusteringCoefficientUpper));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("kCoremean", kCoremean));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core_mean", kCoreMean));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("kCoreLower", kCoreLower));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core_lower", kCoreLower));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("kCoreUpper", kCoreUpper));
+        updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core_upper", kCoreUpper));
 	this.fb_profiles.update(mongo_query, updateCmd);
         
         
