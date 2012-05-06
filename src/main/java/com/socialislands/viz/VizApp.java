@@ -259,29 +259,32 @@ public class VizApp extends App
         Node nSecond = null;
         
         int numNode = graphModel.getGraph().getNodeCount();
-        for (Node n : graphModel.getGraph().getNodes()){
-            double val = Double.valueOf(n.getNodeData().getAttributes().getValue(GraphDistance.BETWEENNESS).toString());
-//            System.out.print(val  + " ");
-            if (val > maxVal){
-                thirdMax = secondMax;
-                secondMax = maxVal;
-                nSecond = nMax;
-                maxVal = val;
-                nMax = n;
-                
-            }else if (val > secondMax){
-                thirdMax = secondMax;
-                secondMax = val;
-                nSecond = n;
-            }else if (val > thirdMax){
-                thirdMax = val;
+        //only does it for graph with more than 20 nodes, reduce the size of the largest node - ego, to make the whole graph more balanced.
+        if(numNode > 20)
+        {
+            for (Node n : graphModel.getGraph().getNodes()){
+                double val = Double.valueOf(n.getNodeData().getAttributes().getValue(GraphDistance.BETWEENNESS).toString());
+    //            System.out.print(val  + " ");
+                if (val > maxVal){
+                    thirdMax = secondMax;
+                    secondMax = maxVal;
+                    nSecond = nMax;
+                    maxVal = val;
+                    nMax = n;
+
+                }else if (val > secondMax){
+                    thirdMax = secondMax;
+                    secondMax = val;
+                    nSecond = n;
+                }else if (val > thirdMax){
+                    thirdMax = val;
+                }
             }
+            System.out.println(numNode + "nodes, max: "+ maxVal +" second: "+secondMax +" third: "+thirdMax);
+
+            nMax.getNodeData().getAttributes().setValue(GraphDistance.BETWEENNESS, thirdMax*1.5);
+            nSecond.getNodeData().getAttributes().setValue(GraphDistance.BETWEENNESS, thirdMax*1.2);
         }
-        System.out.println(numNode + "nodes, max: "+ maxVal +" second: "+secondMax +" third: "+thirdMax);
-        
-        nMax.getNodeData().getAttributes().setValue(GraphDistance.BETWEENNESS, thirdMax*1.5);
-        nSecond.getNodeData().getAttributes().setValue(GraphDistance.BETWEENNESS, thirdMax*1.2);
-        
 //        int valCnt = 0;
 //        for (Node n : graphModel.getGraph().getNodes()){
 //            double val = Double.valueOf(n.getNodeData().getAttributes().getValue(GraphDistance.BETWEENNESS).toString());

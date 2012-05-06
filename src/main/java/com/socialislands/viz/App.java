@@ -85,7 +85,9 @@ public abstract class App implements Runnable
         System.out.println(friends.size());
         
         BasicDBList edges = (BasicDBList) this.fb_profile.get("edges");
-        System.out.println(edges.toArray()[0].getClass().getName());
+        
+        if(edges.size()>0)
+            System.out.println(edges.toArray()[0].getClass().getName());
         
         itr = edges.iterator(); 
         BasicDBObject edge;
