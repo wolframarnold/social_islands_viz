@@ -97,10 +97,20 @@ public abstract class App implements Runnable
             long node1 = Long.valueOf(edge.get("uid1").toString());
             long node2 = Long.valueOf(edge.get("uid2").toString());
             if (node2 > node1){ // skip symmetrical edges
-                int idx1 = (Integer)friendHash.get(node1);
-                int idx2 = (Integer)friendHash.get(node2);
-                Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
-                undirectedGraph.addEdge(e1);
+                //2012-05-06 FB sometimes return a person to the edge list, but not to the node list. It's taken cared of here.
+                Object obj1 = friendHash.get(node1);
+                Object obj2 = friendHash.get(node2);
+                if((obj1!=null)&&(obj2!=null)){
+                    int idx1 = (Integer) obj1;
+                    int idx2 = (Integer) obj2;
+                    Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
+                    undirectedGraph.addEdge(e1);
+                }else{
+                    if(obj1==null)
+                        System.out.println("node1 not in the list: "+node1+"!!!!");
+                    if(obj2==null)
+                        System.out.println("node2 not in the list: "+node2+"!!!!");
+                }
             }
             //System.out.println(edge);
 
