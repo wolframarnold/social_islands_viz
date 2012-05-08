@@ -402,6 +402,7 @@ public class VizApp extends App
         StringWriter stringWriter = new StringWriter();
         ec.exportWriter(stringWriter, (CharacterExporter)exporter);
         String result = stringWriter.toString();
+        System.out.println("Graph output string size: "+result.length());
         
         BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
         BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("graph", result));
