@@ -403,7 +403,15 @@ public class VizApp extends App
         ec.exportWriter(stringWriter, (CharacterExporter)exporter);
         String result = stringWriter.toString();
         System.out.println("Graph output string size: "+result.length());
-        
+
+        // Note: There is a 16MB per record limit in Mongo. With some profiles
+        // we've exeeded this (e.g. David Sifry)
+//        try {
+//            ec.exportFile(new File("graph.gexf"), exporter);
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
+
         BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
         BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("graph", result));
  
