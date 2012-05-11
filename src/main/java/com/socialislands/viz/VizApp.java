@@ -179,10 +179,16 @@ public class VizApp extends App
         //This is for preventing users with too few friends not being able to get any graph back.
         //The larger the graph, the higher we filter the graph, so the image is not too cluttered.
         int degreeFilterRange = 0;
-        if(totalNodes > 1000)
-            degreeFilterRange = 6;
+        if(totalNodes > 2000)
+            degreeFilterRange = 15;
+        else if(totalNodes > 1500)
+            degreeFilterRange = 10;
+        else if(totalNodes > 1000)
+            degreeFilterRange = 8;
         else if(totalNodes > 800)
-            degreeFilterRange = 5;
+            degreeFilterRange = 7;
+        else if(totalNodes > 700)
+            degreeFilterRange = 6;
         else if(totalNodes > 600)
             degreeFilterRange = 4;
         else if(totalNodes > 400)
@@ -402,6 +408,7 @@ public class VizApp extends App
         StringWriter stringWriter = new StringWriter();
         ec.exportWriter(stringWriter, (CharacterExporter)exporter);
         String result = stringWriter.toString();
+        System.out.println("Graph is " + result.length() + " long");
         
         BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
         BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("graph", result));

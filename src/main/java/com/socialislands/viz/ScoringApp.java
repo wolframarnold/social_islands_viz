@@ -5,6 +5,8 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Arrays;
+import java.io.FileWriter;
+import java.io.IOException;
 
 import org.gephi.data.attributes.api.AttributeController;
 import org.gephi.data.attributes.api.AttributeModel;
@@ -78,7 +80,8 @@ public class ScoringApp extends App
         System.out.println(friends.size());
         
         BasicDBList edges = (BasicDBList) this.fb_profile.get("edges");
-        System.out.println(edges.toArray()[0].getClass().getName());
+        if(edges.size()>0)
+            System.out.println(edges.toArray()[0].getClass().getName());
         
         itr = edges.iterator(); 
         BasicDBObject edge = new BasicDBObject();
@@ -87,11 +90,21 @@ public class ScoringApp extends App
             edge = (BasicDBObject) itr.next(); 
             long node1 = Long.valueOf(edge.get("uid1").toString());
             long node2 = Long.valueOf(edge.get("uid2").toString());
+            
             if (node2 > node1){ // skip symmetrical edges
-                int idx1 = (Integer)friendHash.get(node1);
-                int idx2 = (Integer)friendHash.get(node2);
-                Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
-                undirectedGraph.addEdge(e1);
+                Object obj1 = friendHash.get(node1);
+                Object obj2 = friendHash.get(node2);
+                if((obj1!=null)&&(obj2!=null)){
+                    int idx1 = (Integer) obj1;
+                    int idx2 = (Integer) obj2;
+                    Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
+                    undirectedGraph.addEdge(e1);
+                }else{
+                    if(obj1==null)
+                        System.out.println("node1 not in the list: "+node1+"!!!!");
+                    if(obj2==null)
+                        System.out.println("node2 not in the list: "+node2+"!!!!");
+                }
             }
             //System.out.println(edge);
 
@@ -193,6 +206,28 @@ public class ScoringApp extends App
         
     }
     
+    protected void exportToFile() {
+        try{
+            FileWriter writer = new FileWriter("/Users/weidongyang/Projects/social_islands_viz/statoutput.csv", true);
+            writer.append(this.fb_profile.get("name").toString());
+            writer.append(',');
+            
+            writer.append(Integer.toString(numNodes)); writer.append(',');
+            writer.append(Integer.toString(numEdges)); writer.append(',');
+            writer.append(Double.toString(graphDensity)); writer.append(',');
+            writer.append(Double.toString(kCore)); writer.append(',');
+            writer.append(Double.toString(kCoreSize)); 
+            
+            writer.append('\n');
+            
+            writer.flush();
+            writer.close();
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+        
+    }
+    
     /**
      * 
      */
@@ -216,6 +251,30 @@ public class ScoringApp extends App
         
         System.out.println("Start export scores to MongoDB...");
         exportToMongo();
+        System.out.println("Done...");
+        
+    }
+    
+    
+    public void runLocalTest() {
+
+        //Init a project - and therefore a workspace
+        System.out.println("ScoringApp Run started...");
+        try {
+            mongoDB2Graph();
+//            add2Graph("4f63c6e23f033175fe000004");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return;
+        }
+        
+        System.out.println("From formed graph, Nodes: "+undirectedGraph.getNodeCount()+" Edges: "+undirectedGraph.getEdgeCount());
+
+        System.out.println("Start calculating scores...");
+        generateResult();
+        
+        System.out.println("Start export scores to MongoDB...");
+        exportToFile();
         System.out.println("Done...");
         
     }
