@@ -27,6 +27,7 @@ import org.openide.util.Lookup;
 class PhotoActionStat{
     public int numPhotoTagged;
     public int numActions;
+    public int independantactors;
     public String actionName;
     public Map actionMap;
     public Map actionNameMap;
@@ -38,7 +39,7 @@ class PhotoActionStat{
     }
     public void show(){
         System.out.println("Action: "+ actionName);
-        System.out.println("numPhotoTagged: " + numPhotoTagged + " total "+ actionName +": " + numActions + " independant actors: " +actionMap.size());
+        System.out.println("numPhotoTagged: " + numPhotoTagged + " total "+ actionName +": " + numActions + " independant actors: " +independantactors);
         
     }
 }
@@ -298,14 +299,11 @@ public class ScoringApp extends App
                 Iterator tagsItr = tags.iterator();
                 while(tagsItr.hasNext()){
                     BasicDBObject tag = (BasicDBObject) tagsItr.next();
-                    String stringId;
-                    if(actionName.equals("comments")){
-                        BasicDBObject tagName = (BasicDBObject) tag.get("from");
-                        stringId = (String) tagName.get("id");
-                    }
-                    else{
-                        stringId = (String) tag.get("id");
-                    }
+                    if(actionName.equals("comments"))
+                        tag = (BasicDBObject) tag.get("from");
+                        
+                    String stringId = (String) tag.get("id");
+                    
                     if(stringId!=null){
 //                        System.out.println("tagged by: "+stringId);
                         long id = Long.valueOf(stringId);
@@ -334,6 +332,7 @@ public class ScoringApp extends App
         PhotoActionStat photoActionStat = new PhotoActionStat();
         photoActionStat.numPhotoTagged = idx;
         photoActionStat.numActions = sum;
+        photoActionStat.independantactors = tagsMap.size();
         photoActionStat.actionMap = tagsMap;
         photoActionStat.actionNameMap = tagsNameMap;
         photoActionStat.actionName = actionName;
