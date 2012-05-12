@@ -33,7 +33,7 @@ public class StandAlone {
     //          VizApp vizapp = new VizApp("4fa847368578760007000001");  
     //            vizapp.run();
     //            ScoringApp scoringapp = new ScoringApp("4f63c6e23f033175fe000004"); //Wolf
-            ScoringApp scoringapp = new ScoringApp("4fa8648a8578760007000002");
+            ScoringApp scoringapp = new ScoringApp("4f91c5d4a3f1ec0003000001");
               scoringapp.runLocalTest();
     //            runBatchScoring();
 //        testScoring();

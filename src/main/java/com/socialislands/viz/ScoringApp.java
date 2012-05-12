@@ -24,6 +24,25 @@ import org.openide.util.Lookup;
  * @author weidongyang
  */
 
+class PhotoActionStat{
+    public int numPhotoTagged;
+    public int numActions;
+    public String actionName;
+    public Map actionMap;
+    public Map actionNameMap;
+    void photoStat(){
+        numPhotoTagged =0;
+        numActions = 0;
+        actionMap = new HashMap<Long, Integer>();
+        actionNameMap = new HashMap<Long, Integer>();
+    }
+    public void show(){
+        System.out.println("Action: "+ actionName);
+        System.out.println("numPhotoTagged: " + numPhotoTagged + " total "+ actionName +": " + numActions + " independant actors: " +actionMap.size());
+        
+    }
+}
+
 public class ScoringApp extends App
 {
     private int numNodes;
@@ -44,6 +63,7 @@ public class ScoringApp extends App
     int numPhotoLike=0;
     int numPhotoComment=0;
     int numFriendsInYourPhoto=0;
+    int numLikesInYourPhoto = 0;
 //    DBObject user;
 
     
@@ -246,28 +266,48 @@ public class ScoringApp extends App
     }
       
     private void getPhotosStat(){
+        System.out.println("Tagged photos stats for: "+ userName);
+        PhotoActionStat tagStat = getPhotosActionStat("tags");
+        tagStat.show();
+        
+        PhotoActionStat likeStat = getPhotosActionStat("likes");
+        likeStat.show();
+        
+        PhotoActionStat commentStat = getPhotosActionStat("comments");
+        commentStat.show();
+        
+    }
+    
+    public PhotoActionStat getPhotosActionStat(String actionName){
         Map tagsMap = new HashMap<Long, Integer>();
         Map tagsNameMap = new HashMap<Long, String>();
-
+ 
         BasicDBList photos = (BasicDBList) fb_profile.get("photos"); 
         Iterator itr = photos.iterator(); 
         BasicDBObject photo = new BasicDBObject();
         int idx = 0;
         while(itr.hasNext()) {
             photo = (BasicDBObject) itr.next(); 
-            System.out.println(idx);
-            System.out.println("photo: " + photo.toString());
-            //System.out.println(photo.get("tags"));  //likes, tags, comments
-            BasicDBObject tagsObj = (BasicDBObject) photo.get("tags");
+//            System.out.println(idx);
+//            System.out.println("photo: " + photo.toString());
+//            //retrieving tags
+            BasicDBObject tagsObj = (BasicDBObject) photo.get(actionName);
             if(tagsObj!=null){
                 BasicDBList tags = (BasicDBList) tagsObj.get("data");
-                System.out.println("tags: " + tags);
+//                System.out.println("tags: " + tags);
                 Iterator tagsItr = tags.iterator();
                 while(tagsItr.hasNext()){
                     BasicDBObject tag = (BasicDBObject) tagsItr.next();
-                    String stringId = (String) tag.get("id");
+                    String stringId;
+                    if(actionName.equals("comments")){
+                        BasicDBObject tagName = (BasicDBObject) tag.get("from");
+                        stringId = (String) tagName.get("id");
+                    }
+                    else{
+                        stringId = (String) tag.get("id");
+                    }
                     if(stringId!=null){
-                        System.out.println("tagged by: "+stringId);
+//                        System.out.println("tagged by: "+stringId);
                         long id = Long.valueOf(stringId);
                         if(tagsMap.containsKey(id)){
                             Integer val =(Integer) tagsMap.get(id);
@@ -280,26 +320,27 @@ public class ScoringApp extends App
                 }
             }
             idx++;
-
         }
         
-        numPhotoTagged = idx;
-        System.out.println(tagsMap);
-        System.out.println(tagsNameMap);
-        System.out.println(tagsMap.values());
-    
         int sum = 0;
         itr = tagsMap.entrySet().iterator();
         while(itr.hasNext()){
             Map.Entry pairs = (Map.Entry)itr.next();
             sum += (Integer) pairs.getValue();
         }
-        sum -= numPhotoTagged;
-        System.out.println("Total Common Friends tags: "+ sum);
-        numFriendsInYourPhoto = sum;
-        System.out.println("test::: " +numPhotoTagged + numFriendsInYourPhoto);
-  
+        if(actionName.equals("tags"))
+            sum -= numPhotoTagged;
+          
+        PhotoActionStat photoActionStat = new PhotoActionStat();
+        photoActionStat.numPhotoTagged = idx;
+        photoActionStat.numActions = sum;
+        photoActionStat.actionMap = tagsMap;
+        photoActionStat.actionNameMap = tagsNameMap;
+        photoActionStat.actionName = actionName;
+        
+        return photoActionStat;
     }
+    
     public void runLocalTest() {
         try{
             testScoring();
