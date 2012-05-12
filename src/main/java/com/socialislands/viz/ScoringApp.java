@@ -44,7 +44,7 @@ public class ScoringApp extends App
     int numPhotoLike=0;
     int numPhotoComment=0;
     int numFriendsInYourPhoto=0;
-    DBObject user;
+//    DBObject user;
 
     
     @Override
@@ -241,16 +241,6 @@ public class ScoringApp extends App
         
     }
     private void testScoring() throws UnknownHostException{
-        String mongo_url = (new YamlConfig("mongo.yml")).propertiesForCurrentEnv().getProperty("uri");
-        MongoURI mongoURI = new MongoURI(mongo_url);
-        DB dbtmp = mongoURI.connectDB();
-        DBCollection facebookProfiles;
-        facebookProfiles = dbtmp.getCollection("facebook_profiles");
-
-    
-        BasicDBObject query = new BasicDBObject();
-        query.put("name", "Weidong Yang");
-        user = facebookProfiles.findOne(query);
         getPhotosStat();
 
     }
@@ -259,7 +249,7 @@ public class ScoringApp extends App
         Map tagsMap = new HashMap<Long, Integer>();
         Map tagsNameMap = new HashMap<Long, String>();
 
-        BasicDBList photos = (BasicDBList) user.get("photos"); 
+        BasicDBList photos = (BasicDBList) fb_profile.get("photos"); 
         Iterator itr = photos.iterator(); 
         BasicDBObject photo = new BasicDBObject();
         int idx = 0;
