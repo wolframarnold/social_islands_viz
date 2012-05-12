@@ -53,7 +53,7 @@ public abstract class App implements Runnable
         BasicDBList friends = (BasicDBList) this.fb_profile.get("friends");
         
         nodes = new Node[friends.size()*2];
-        friendHash = new HashMap<Long, Integer>();
+        
         
         Iterator itr = friends.iterator(); 
         BasicDBObject friend = new BasicDBObject();

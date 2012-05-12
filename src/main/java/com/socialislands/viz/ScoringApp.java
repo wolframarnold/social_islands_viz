@@ -2,11 +2,12 @@ package com.socialislands.viz;
 
 import com.mongodb.*;
 import java.net.UnknownHostException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Arrays;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.gephi.data.attributes.api.AttributeController;
 import org.gephi.data.attributes.api.AttributeModel;
@@ -38,6 +39,13 @@ public class ScoringApp extends App
     private double kCoreLower;
     private double kCoreUpper;
     
+    
+    int numPhotoTagged=0;
+    int numPhotoLike=0;
+    int numPhotoComment=0;
+    int numFriendsInYourPhoto=0;
+    DBObject user;
+
     
     @Override
     protected void mongoDB2Graph()  throws Exception {
@@ -206,28 +214,6 @@ public class ScoringApp extends App
         
     }
     
-    protected void exportToFile() {
-        try{
-            FileWriter writer = new FileWriter("/Users/weidongyang/Projects/social_islands_viz/statoutput.csv", true);
-            writer.append(this.fb_profile.get("name").toString());
-            writer.append(',');
-            
-            writer.append(Integer.toString(numNodes)); writer.append(',');
-            writer.append(Integer.toString(numEdges)); writer.append(',');
-            writer.append(Double.toString(graphDensity)); writer.append(',');
-            writer.append(Double.toString(kCore)); writer.append(',');
-            writer.append(Double.toString(kCoreSize)); 
-            
-            writer.append('\n');
-            
-            writer.flush();
-            writer.close();
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-        
-    }
-    
     /**
      * 
      */
@@ -254,28 +240,83 @@ public class ScoringApp extends App
         System.out.println("Done...");
         
     }
-    
-    
-    public void runLocalTest() {
+    private void testScoring() throws UnknownHostException{
+        String mongo_url = (new YamlConfig("mongo.yml")).propertiesForCurrentEnv().getProperty("uri");
+        MongoURI mongoURI = new MongoURI(mongo_url);
+        DB dbtmp = mongoURI.connectDB();
+        DBCollection facebookProfiles;
+        facebookProfiles = dbtmp.getCollection("facebook_profiles");
 
-        //Init a project - and therefore a workspace
-        System.out.println("ScoringApp Run started...");
-        try {
-            mongoDB2Graph();
-//            add2Graph("4f63c6e23f033175fe000004");
+    
+        BasicDBObject query = new BasicDBObject();
+        query.put("name", "Weidong Yang");
+        user = facebookProfiles.findOne(query);
+        getPhotosStat();
+
+    }
+      
+    private void getPhotosStat(){
+        Map tagsMap = new HashMap<Long, Integer>();
+        Map tagsNameMap = new HashMap<Long, String>();
+
+        BasicDBList photos = (BasicDBList) user.get("photos"); 
+        Iterator itr = photos.iterator(); 
+        BasicDBObject photo = new BasicDBObject();
+        int idx = 0;
+        while(itr.hasNext()) {
+            photo = (BasicDBObject) itr.next(); 
+            System.out.println(idx);
+            System.out.println("photo: " + photo.toString());
+            //System.out.println(photo.get("tags"));  //likes, tags, comments
+            BasicDBObject tagsObj = (BasicDBObject) photo.get("tags");
+            if(tagsObj!=null){
+                BasicDBList tags = (BasicDBList) tagsObj.get("data");
+                System.out.println("tags: " + tags);
+                Iterator tagsItr = tags.iterator();
+                while(tagsItr.hasNext()){
+                    BasicDBObject tag = (BasicDBObject) tagsItr.next();
+                    String stringId = (String) tag.get("id");
+                    if(stringId!=null){
+                        System.out.println("tagged by: "+stringId);
+                        long id = Long.valueOf(stringId);
+                        if(tagsMap.containsKey(id)){
+                            Integer val =(Integer) tagsMap.get(id);
+                            tagsMap.put(id, val+1);
+                        }else{
+                            tagsMap.put(id, 1);
+                            tagsNameMap.put(id, (String) tag.get("name"));
+                        }
+                    }
+                }
+            }
+            idx++;
+
+        }
+        
+        numPhotoTagged = idx;
+        System.out.println(tagsMap);
+        System.out.println(tagsNameMap);
+        System.out.println(tagsMap.values());
+    
+        int sum = 0;
+        itr = tagsMap.entrySet().iterator();
+        while(itr.hasNext()){
+            Map.Entry pairs = (Map.Entry)itr.next();
+            sum += (Integer) pairs.getValue();
+        }
+        sum -= numPhotoTagged;
+        System.out.println("Total Common Friends tags: "+ sum);
+        numFriendsInYourPhoto = sum;
+        System.out.println("test::: " +numPhotoTagged + numFriendsInYourPhoto);
+  
+    }
+    public void runLocalTest() {
+        try{
+            testScoring();
         } catch (Exception ex) {
             ex.printStackTrace();
             return;
         }
-        
-        System.out.println("From formed graph, Nodes: "+undirectedGraph.getNodeCount()+" Edges: "+undirectedGraph.getEdgeCount());
-
-        System.out.println("Start calculating scores...");
-        generateResult();
-        
-        System.out.println("Start export scores to MongoDB...");
-        exportToFile();
-        System.out.println("Done...");
         
     }
     
