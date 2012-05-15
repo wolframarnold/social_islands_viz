@@ -1,10 +1,17 @@
 package com.socialislands.viz;
 
 import com.mongodb.*;
+import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Arrays;
+import java.util.*;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 
 import org.gephi.data.attributes.api.AttributeController;
 import org.gephi.data.attributes.api.AttributeModel;
@@ -35,6 +42,7 @@ public class ScoringApp extends App
     private double kCoreMean;
     private double kCoreLower;
     private double kCoreUpper;
+    private String postbackUrl;
     
     
     @Override
@@ -193,6 +201,38 @@ public class ScoringApp extends App
         
     }
     
+    // make an HTTP Post with the facebook profile id to the frontend
+    // which notifies it that the graph is ready
+    private void notifyClient() {
+        
+        HttpClient httpclient = new DefaultHttpClient();
+        
+        HttpPost post = new HttpPost(this.postbackUrl);
+
+        List<NameValuePair> data = new ArrayList<NameValuePair>(1);
+        data.add(new BasicNameValuePair("uid", this.fb_profile.get("uid").toString()));
+        // send payload
+        data.add(new BasicNameValuePair("maturity", this.fb_profile.get("degree").toString()));
+        data.add(new BasicNameValuePair("graph_regularity_lower", this.fb_profile.get("clustering_coefficient_lower").toString()));
+        data.add(new BasicNameValuePair("graph_regularity_upper", this.fb_profile.get("clustering_coefficient_upper").toString()));
+        data.add(new BasicNameValuePair("graph_regularity_mean", this.fb_profile.get("clustering_coefficient_mean").toString()));
+        data.add(new BasicNameValuePair("graph_regularity_actual", this.fb_profile.get("graph_density").toString()));
+        data.add(new BasicNameValuePair("community_diversity_lower", this.fb_profile.get("k_core_lower").toString()));
+        data.add(new BasicNameValuePair("community_diversity_upper", this.fb_profile.get("k_core_upper").toString()));
+        data.add(new BasicNameValuePair("community_diversity_mean", this.fb_profile.get("k_core_mean").toString()));
+        data.add(new BasicNameValuePair("community_diversity_actual", this.fb_profile.get("k_core").toString()));
+        
+        try {
+           post.setEntity(new UrlEncodedFormEntity(data));
+           HttpResponse response = httpclient.execute(post);
+        } catch (ClientProtocolException e) {
+            System.out.println("ERROR--ClientProtocolException: "+e.getMessage());
+        } catch (IOException e) {
+            System.out.println("ERROR--IOException: "+e.getMessage());
+        }
+        
+    }
+    
     /**
      * 
      */
@@ -216,6 +256,9 @@ public class ScoringApp extends App
         
         System.out.println("Start export scores to MongoDB...");
         exportToMongo();
+        System.out.println("Pinging client at: " + this.postbackUrl);
+        notifyClient();
+
         System.out.println("Done...");
         
     }
@@ -225,8 +268,9 @@ public class ScoringApp extends App
      * @param s
      * @throws UnknownHostException
      */
-    public ScoringApp(final String s) throws UnknownHostException {
-        super(s);
+    public ScoringApp(final String user_id, final String url) throws UnknownHostException {
+        super(user_id);
+        this.postbackUrl = url;
     }
 
     
