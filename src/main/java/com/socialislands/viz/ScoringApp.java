@@ -257,7 +257,9 @@ public class ScoringApp extends App
         System.out.println("Start export scores to MongoDB...");
         exportToMongo();
         System.out.println("Pinging client at: " + this.postbackUrl);
-        notifyClient();
+        if (this.postbackUrl != "") {
+            notifyClient();
+        }
 
         System.out.println("Done...");
         
@@ -273,6 +275,10 @@ public class ScoringApp extends App
         this.postbackUrl = url;
     }
 
+    public ScoringApp(final String user_id) throws UnknownHostException {
+        super(user_id);
+        this.postbackUrl = "";
+    }
     
 }
 
