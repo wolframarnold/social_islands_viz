@@ -81,6 +81,10 @@
                     <mainClass>com.socialislands.viz.JesqueScoring</mainClass>
                     <name>social_islands_score</name>
                 </program>
+                <program>
+                    <mainClass>com.socialislands.viz.StandAlone</mainClass>
+                    <name>stand_alone</name>
+                </program>
             </programs>
           </configuration>
           <executions>

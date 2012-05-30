@@ -62,7 +62,14 @@ Specify the main class in:
 Run -> Set Project Configuration -> Customize -> Run
 
 You can choose Jesque operation or Standalone mode. Standalone mode is for
-command line testing and it won't take jobs from Jesque.
+command line testing and it won't take jobs from Jesque. Note: You can run
+the stand-alone app also from the command line and pass the job type and user_id
+on the command line, see below.
+
+To set Java properties, e.g. `APP_ENV` when running in NetBeans, add them to the
+"VM Options" field of the Run dialog, e.g.:
+
+    -DAPP_ENV=production -DMONGOHQ_URL=mongo://...
 
 
 Running Jesque from the command line
@@ -80,3 +87,13 @@ it execute permissions:
 Then run it with the `MONGOHQ_URL` set:
 
     target/bin/social_islands_viz
+
+Running StandAlone from the command line
+----------------------------------------
+
+For easier diagnostics, you can run the stand-alone mode also from the command line:
+
+    sh target/bin/stand_alone <job_type> <user_id>
+
+where `job_type` is either "score" or "viz", and `user_id` is the MongoDB
+user_id.
