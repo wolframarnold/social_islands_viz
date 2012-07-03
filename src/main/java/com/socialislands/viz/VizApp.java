@@ -56,98 +56,8 @@ import org.gephi.filters.plugin.graph.KCoreBuilder;
 
 public class VizApp extends App
 {
-    
-    
-    // TODO: rename user -> user2, etc. to avoid name conflicts with instance var's 
-//    private void add2Graph(String user_id)  throws Exception {
-//        System.out.println("Adding data from Mongo for user: "+user_id);
-//        
-//        BasicDBObject query = new BasicDBObject();
-//        query.put("user_id", new ObjectId(user_id));
-//        
-//        DBCursor cursor = fb_profiles.find(query);
-//        
-//        DBObject fb_profile = cursor.next();
-//        
-//        BasicDBObject queryb = new BasicDBObject();
-//        queryb.put("_id", new ObjectId(user_id));
-//        
-//        cursor = users.find(queryb);
-//        DBObject user = cursor.next();
-//        
-//        String userName = user.get("name").toString();
-//
-//        Long userUid = Long.valueOf(user.get("uid").toString());        
-//      
-//        
-//        BasicDBList friends = (BasicDBList) fb_profile.get("friends");
-//       
-//        Iterator itr = friends.iterator(); 
-//        BasicDBObject friend = new BasicDBObject();
-//        int idx = friendHash.size();
-//        while(itr.hasNext()) {
-//            friend = (BasicDBObject) itr.next(); 
-//            long uid = Long.valueOf(friend.get("uid").toString());
-//            String name = friend.get("name").toString();
-//            if(!friendHash.containsKey(uid)){
-//                friendHash.put(new Long(uid), new Integer(idx));
-//                String suid = ""+uid;
-//                Node n0 = graphModel.factory().newNode(suid);
-//                n0.getNodeData().setLabel(name);
-//                undirectedGraph.addNode(n0);
-//                nodes[idx]=n0;
-//                idx++;
-//            }
-//        }
-//        if(!friendHash.containsKey(userUid)){
-//            friendHash.put(new Long(userUid), idx);
-//            Node nego = graphModel.factory().newNode(""+userUid);
-//            nego.getNodeData().setLabel(userName);
-//            undirectedGraph.addNode(nego);
-//            nodes[idx]=nego;
-//            idx++;
-//        }
-//        
-//        System.out.println(friend);
-//        System.out.println(friend.get("uid"));
-//        System.out.println(friends.size());
-//        
-//        BasicDBList edges = (BasicDBList) fb_profile.get("edges");
-//        System.out.println(edges.toArray()[0].getClass().getName());
-//        
-//        itr = edges.iterator(); 
-//        BasicDBObject edge = new BasicDBObject();
-//        while(itr.hasNext()) {
-//
-//            edge = (BasicDBObject) itr.next(); 
-//            long node1 = Long.valueOf(edge.get("uid1").toString());
-//            long node2 = Long.valueOf(edge.get("uid2").toString());
-//            if (node2 > node1){ // skip symmetrical edges
-//                int idx1 = friendHash.get(node1);
-//                int idx2 = friendHash.get(node2);
-////                System.out.println("node1: "+node1+" idx: "+idx1+ " node2: "+node2 + " idx: "+idx2);
-//                Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
-//                undirectedGraph.addEdge(e1);
-//            }
-//            //System.out.println(edge);
-//
-//        }
-//
-//        
-//        int egoidx = friendHash.get(userUid);
-//        itr = friends.iterator(); 
-//        friend = new BasicDBObject();
-//        while(itr.hasNext()) {
-//            friend = (BasicDBObject) itr.next(); 
-//            long uid = Long.valueOf(friend.get("uid").toString());
-//            int nodeIdx = friendHash.get(uid);
-//            Edge e2 = graphModel.factory().newEdge(nodes[nodeIdx], nodes[egoidx]);
-//            undirectedGraph.addEdge(e2);
-//        }
-//        
-//        System.out.println(edges.size());
-//    }
-    
+    private ArrayList<BasicDBObject> labels_for_mongo = new ArrayList<BasicDBObject>();
+   
     @Override
     protected void generateResult() {
         AttributeModel attributeModel = Lookup.getDefault().lookup(AttributeController.class).getModel();
@@ -158,8 +68,7 @@ public class VizApp extends App
         System.out.println("inside genGraph, Nodes: " + totalNodes);
         System.out.println("Edges: " + undirectedGraph.getEdgeCount());
 
-        
-//        get degree distribution
+        // get degree distribution
         Degree degree = new Degree();
         degree.execute(graphModel, attributeModel);
         System.out.println("average degree " +degree.getAverageDegree());
@@ -332,14 +241,13 @@ public class VizApp extends App
         // Improve colors -- prefer some neon colors that shine on black background
         NodeColorTransformer nodeColorTransformer2 = new NodeColorTransformer();
         Map<Object, Color> color_map = nodeColorTransformer2.getMap();
-	setColorsAndSaveLabelsToMongo(p2, color_map);
+	setColorsAndSetLabelsForMongo(p2, color_map);
         
         partitionController.transform(p2, nodeColorTransformer2);
     }
 
-    private void setColorsAndSaveLabelsToMongo(Partition p2, Map<Object, Color> color_map) throws MongoException {
+    private void setColorsAndSetLabelsForMongo(Partition p2, Map<Object, Color> color_map) throws MongoException {
         // build up linear array for colors to store in MongoDB
-        ArrayList<BasicDBObject> labels_for_mongo = new ArrayList<BasicDBObject>();
         for (Part p : p2.getParts()) {
             int i = (Integer) p.getValue();
             Color color = Palette.colors[i];
@@ -353,19 +261,14 @@ public class VizApp extends App
             label_for_mongo.put("name", "Label me #" + (i+1));
             label_for_mongo.put("group_index", i);
             label_for_mongo.put("color", color_hash);
-            labels_for_mongo.add(label_for_mongo);
+            this.labels_for_mongo.add(label_for_mongo);
         }
         
         //        nodeColorTransformer2.randomizeColors(p2);
         //        printMap(nodeColorTransformer2.getMap());
-
-        // save new labels to MongoDB
-        // TODO: WARNING -- THIS WILL WIPE OUT EXISTING LABELS!!!
-        BasicDBObject mongo_query = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("labels", labels_for_mongo));
-        this.fb_profiles.update(mongo_query, updateCmd);
     }
     
+    // TODO: These stats should be written to a stats table instead of the FB Profile table
     private void reportStatistics(int[] arr){
         DescriptiveStatistics stat = new DescriptiveStatistics();
         int numItem = arr.length;
@@ -380,15 +283,15 @@ public class VizApp extends App
         
         System.out.println("total nodes:" + numItem + ", average degreeb: " + mean+", stdb: " + std + "median: "+median);
         
-        BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
+        BasicDBObject query = new BasicDBObject("_id", this.facebook_profile_id);
         BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("degree_average", mean));
-	this.fb_profiles.update(query, updateCmd);
+	this.fb_profiles_collection.update(query, updateCmd);
         updateCmd = new BasicDBObject("$set", new BasicDBObject("degree_stddev", std));
-	this.fb_profiles.update(query, updateCmd);         
+	this.fb_profiles_collection.update(query, updateCmd);         
         updateCmd = new BasicDBObject("$set", new BasicDBObject("degree_median", median));
-	this.fb_profiles.update(query, updateCmd);
+	this.fb_profiles_collection.update(query, updateCmd);
         updateCmd = new BasicDBObject("$set", new BasicDBObject("histogram_num_connections", arr));
-	this.fb_profiles.update(query, updateCmd);
+	this.fb_profiles_collection.update(query, updateCmd);
     }
     
     @Override
@@ -412,10 +315,23 @@ public class VizApp extends App
 //            ex.printStackTrace();
 //        }
 
-        BasicDBObject query = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("graph", result));
- 
- 	this.fb_profiles.update(query, updateCmd);
+        BasicDBObject fields = new BasicDBObject();
+        fields.put("gexf", result);
+        // TODO: WARNING -- THIS WILL WIPE OUT EXISTING LABELS!!!
+        fields.put("labels", labels_for_mongo);
+
+        DBCollection fb_graph_collection = db.getCollection("facebook_graphs");
+        
+        BasicDBObject query = new BasicDBObject("facebook_profile_id", this.facebook_profile_id);
+        DBObject fb_graph = fb_graph_collection.findOne(query);
+
+        if (fb_graph == null) {
+            fields.put("facebook_profile_id", this.facebook_profile_id);
+            fb_graph_collection.insert(fields);
+        } else {
+            BasicDBObject updateCmd = new BasicDBObject("$set", fields);
+            fb_graph_collection.update(query, updateCmd);
+        }
     }
     
     // make an HTTP Post with the facebook profile id to the frontend
@@ -428,7 +344,7 @@ public class VizApp extends App
         HttpPost post = new HttpPost(notify_url);
 
         List<NameValuePair> data = new ArrayList<NameValuePair>(1);
-        data.add(new BasicNameValuePair("facebook_profile_id", this.fb_profile.get("_id").toString()));
+        data.add(new BasicNameValuePair("facebook_profile_id", this.facebook_profile_id.toString()));
         
         try {
            post.setEntity(new UrlEncodedFormEntity(data));

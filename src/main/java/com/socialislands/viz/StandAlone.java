@@ -19,14 +19,17 @@ public class StandAlone {
 
         if (args.length != 2) {
             System.out.println("Incorrect number of arguments!");
-            System.out.println("Usage: stand_alone <job_type> <user_id>");
+            System.out.println("Usage: stand_alone <job_type> <facebook_profile_id>");
             System.out.println("where: <job_type> is one of: viz, score");
-            System.out.println("and:   <user_id>  is the MongoDB user_id");
+            System.out.println("and:   <facebook_profile_id>  is the MongoDB ID of the document in the facebook_profiles collection");
         } else {
             if ("viz".equals(args[0])) {
+                System.out.println("Running Viz app for profile:" + args[1]);
                 VizApp app = new VizApp(args[1]);
+                app.run();
             } else if ("score".equals(args[0])) {
                 ScoringApp app = new ScoringApp(args[1]);
+                app.run();
             } else {
                 System.out.println(args[0]+" is an unknown job type. Use one of: viz, score");
             }

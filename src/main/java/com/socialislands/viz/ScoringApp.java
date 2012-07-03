@@ -44,71 +44,6 @@ public class ScoringApp extends App
     private double kCoreUpper;
     private String postbackUrl;
     
-    
-    @Override
-    protected void mongoDB2Graph()  throws Exception {
-        pc = Lookup.getDefault().lookup(ProjectController.class);
-        
-        pc.newProject();
-        workspace = pc.getCurrentWorkspace();
-
-        //Get a graph model - it exists because we have a workspace
-        graphModel = Lookup.getDefault().lookup(GraphController.class).getModel();
-        undirectedGraph = graphModel.getUndirectedGraph();
-        
-        BasicDBList friends = (BasicDBList) this.fb_profile.get("friends");
-        
-        nodes = new Node[friends.size()*2];
-        friendHash = new HashMap<Long, Integer>();
-        
-        Iterator itr = friends.iterator(); 
-        BasicDBObject friend = new BasicDBObject();
-        int idx = 0;
-        while(itr.hasNext()) {
-            friend = (BasicDBObject) itr.next(); 
-            long uid = Long.valueOf(friend.get("uid").toString());
-            String name = friend.get("name").toString();
-            friendHash.put(new Long(uid), new Integer(idx));
-            String suid = ""+uid;
-            Node n0 = graphModel.factory().newNode(suid);
-            n0.getNodeData().setLabel(name);
-            undirectedGraph.addNode(n0);
-            nodes[idx]=n0;
-            idx++;
-            //            System.out.println(friend);
-
-        }
-        
-        friendHash.put(new Long(userUid), idx);
-        
-        System.out.println(friend);
-        System.out.println(friend.get("uid"));
-        System.out.println(friends.size());
-        
-        BasicDBList edges = (BasicDBList) this.fb_profile.get("edges");
-        System.out.println(edges.toArray()[0].getClass().getName());
-        
-        itr = edges.iterator(); 
-        BasicDBObject edge = new BasicDBObject();
-        while(itr.hasNext()) {
-
-            edge = (BasicDBObject) itr.next(); 
-            long node1 = Long.valueOf(edge.get("uid1").toString());
-            long node2 = Long.valueOf(edge.get("uid2").toString());
-            if (node2 > node1){ // skip symmetrical edges
-                int idx1 = (Integer)friendHash.get(node1);
-                int idx2 = (Integer)friendHash.get(node2);
-                Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
-                undirectedGraph.addEdge(e1);
-            }
-            //System.out.println(edge);
-
-        }
-        
-        System.out.println(edges.size());
-    }
-    
-    
     @Override
     protected void generateResult() {
         AttributeModel attributeModel = Lookup.getDefault().lookup(AttributeController.class).getModel();
@@ -163,42 +98,23 @@ public class ScoringApp extends App
     
     @Override
     protected void exportToMongo() {
-        BasicDBObject mongo_query = new BasicDBObject("_id", this.fb_profile.get("_id"));
-        BasicDBObject updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core", kCore));
-	this.fb_profiles.update(mongo_query, updateCmd);
+        // TODO: Write these to a stats table instead of the FB Profile table
+        BasicDBObject fields = new BasicDBObject();
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core_size", kCoreSize));
-	this.fb_profiles.update(mongo_query, updateCmd);
+        fields.put("k_core", kCore);
+        fields.put("k_core_size", kCoreSize);
+	fields.put("graph_density", graphDensity);
+	fields.put("degree", numNodes);
+        fields.put("average_clustering_coefficient", averageClusteringCoefficient);
+        fields.put("clustering_coefficient_mean", clusteringCoefficientMean);
+        fields.put("clustering_coefficient_lower", clusteringCoefficientLower);
+        fields.put("clustering_coefficient_upper", clusteringCoefficientUpper);
+        fields.put("k_core_mean", kCoreMean);
+        fields.put("k_core_lower", kCoreLower);
+        fields.put("k_core_upper", kCoreUpper);
         
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("graph_density", graphDensity));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("degree", numNodes));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("average_clustering_coefficient", averageClusteringCoefficient));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("clustering_coefficient_mean", clusteringCoefficientMean));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("clustering_coefficient_lower", clusteringCoefficientLower));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("clustering_coefficient_upper", clusteringCoefficientUpper));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core_mean", kCoreMean));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core_lower", kCoreLower));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        updateCmd = new BasicDBObject("$set", new BasicDBObject("k_core_upper", kCoreUpper));
-	this.fb_profiles.update(mongo_query, updateCmd);
-        
-        
-        
+        BasicDBObject mongo_query = new BasicDBObject("_id", this.facebook_profile_id);
+        this.fb_profiles_collection.update(mongo_query, new BasicDBObject("$set", fields));
     }
     
     // make an HTTP Post with the facebook profile id to the frontend
@@ -270,13 +186,13 @@ public class ScoringApp extends App
      * @param s
      * @throws UnknownHostException
      */
-    public ScoringApp(final String user_id, final String url) throws UnknownHostException {
-        super(user_id);
+    public ScoringApp(final String facebook_profile_id, final String url) throws UnknownHostException {
+        super(facebook_profile_id);
         this.postbackUrl = url;
     }
 
-    public ScoringApp(final String user_id) throws UnknownHostException {
-        super(user_id);
+    public ScoringApp(final String facebook_profile_id) throws UnknownHostException {
+        super(facebook_profile_id);
         this.postbackUrl = "";
     }
     

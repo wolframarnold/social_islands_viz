@@ -4,9 +4,7 @@ import com.mongodb.*;
 import org.bson.types.ObjectId;
 
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import org.gephi.graph.api.Edge;
 import org.gephi.graph.api.GraphController;
@@ -24,20 +22,17 @@ import org.openide.util.Lookup;
 
 public abstract class App implements Runnable
 {
-   protected ProjectController pc;
+    protected ProjectController pc;
     protected Workspace workspace;
     protected GraphModel graphModel;
     protected UndirectedGraph undirectedGraph;
-    protected String user_id;
-    protected DBObject fb_profile;         
-    protected DBCollection fb_profiles;
-    protected DBCollection users;
-    protected DBObject user;
-    protected String userName;
-    protected long userUid;
-    protected Map friendHash;
-    protected Node[] nodes;
-    protected Mongo m;
+    protected ObjectId facebook_profile_id;
+    protected DBObject fb_profile;
+    protected DBObject fb_graph;
+    protected DBCollection fb_profiles_collection;
+    protected String fb_name;
+    protected HashMap<Long,Node> nodes;
+    protected Long fb_uid;
     protected DB db;
     
     protected void mongoDB2Graph()  throws Exception {
@@ -49,80 +44,49 @@ public abstract class App implements Runnable
         //Get a graph model - it exists because we have a workspace
         graphModel = Lookup.getDefault().lookup(GraphController.class).getModel();
         undirectedGraph = graphModel.getUndirectedGraph();
+        nodes = new HashMap<Long,Node>();
         
-        BasicDBList friends = (BasicDBList) this.fb_profile.get("friends");
-        
-        nodes = new Node[friends.size()*2];
-        friendHash = new HashMap<Long, Integer>();
-        
-        Iterator itr = friends.iterator(); 
-        BasicDBObject friend = new BasicDBObject();
-        int idx = 0;
-        while(itr.hasNext()) {
-            friend = (BasicDBObject) itr.next(); 
-            long uid = Long.valueOf(friend.get("uid").toString());
-            String name = friend.get("name").toString();
-            friendHash.put(new Long(uid), new Integer(idx));
-            String suid = ""+uid;
-            Node n0 = graphModel.factory().newNode(suid);
-            n0.getNodeData().setLabel(name);
-            undirectedGraph.addNode(n0);
-            nodes[idx]=n0;
-            idx++;
-            //            System.out.println(friend);
+        BasicDBList friend_ids = (BasicDBList) this.fb_profile.get("facebook_profile_uids");
 
-        }
+        BasicDBObject query = new BasicDBObject();
+        query.put("uid", new BasicDBObject("$in", friend_ids));
+        DBCursor cursor = this.fb_profiles_collection.find(query);
         
-        friendHash.put(new Long(userUid), idx);
-        Node nego = graphModel.factory().newNode(""+userUid);
-        nego.getNodeData().setLabel(userName);
-        undirectedGraph.addNode(nego);
-        nodes[idx]=nego;
-        idx++;
+        addNode(fb_uid,fb_name);  // Ego node
         
-        System.out.println(friend);
-        System.out.println(friend.get("uid"));
-        System.out.println(friends.size());
-        
-        BasicDBList edges = (BasicDBList) this.fb_profile.get("edges");
-        
-        if(edges.size()>0)
-            System.out.println(edges.toArray()[0].getClass().getName());
-        
-        itr = edges.iterator(); 
-        BasicDBObject edge;
-        while(itr.hasNext()) {
+        while(cursor.hasNext()) {
+            DBObject friend_profile = cursor.next();
+            Long friend_uid = ((Number) friend_profile.get("uid")).longValue();
+            addNode(friend_uid, (String)friend_profile.get("name"));
 
-            edge = (BasicDBObject) itr.next(); 
-            long node1 = Long.valueOf(edge.get("uid1").toString());
-            long node2 = Long.valueOf(edge.get("uid2").toString());
-            if (node2 > node1){ // skip symmetrical edges
-                //2012-05-06 FB sometimes return a person to the edge list, but not to the node list. It's taken cared of here.
-                Object obj1 = friendHash.get(node1);
-                Object obj2 = friendHash.get(node2);
-                if((obj1!=null)&&(obj2!=null)){
-                    int idx1 = (Integer) obj1;
-                    int idx2 = (Integer) obj2;
-                    Edge e1 = graphModel.factory().newEdge(nodes[idx1], nodes[idx2]);
-                    undirectedGraph.addEdge(e1);
-                }else{
-                    if(obj1==null)
-                        System.out.println("node1 not in the list: "+node1+"!!!!");
-                    if(obj2==null)
-                        System.out.println("node2 not in the list: "+node2+"!!!!");
-                }
-            }
-            //System.out.println(edge);
-
-        }
+            // Add edge from ego node to friend
+            Edge edge_ego = graphModel.factory().newEdge(nodes.get(fb_uid), nodes.get(friend_uid));
+            undirectedGraph.addEdge(edge_ego);
             
-        for (int i1 = 0; i1< friends.size(); i1++){
-            Edge e2 = graphModel.factory().newEdge(nodes[i1], nego);
-            undirectedGraph.addEdge(e2);
+            // Add nodes and edges for all friends of friends
+            BasicDBList friends_friend_ids = (BasicDBList) friend_profile.get("facebook_profile_uids");
+            Iterator ff_itr = friends_friend_ids.iterator();
+            while(ff_itr.hasNext()) {
+                Long ff_uid = ((Number)ff_itr.next()).longValue();
+                addNode(ff_uid, null);
+                // We wind up adding the edge twice, once from each direction, but that's OK
+                Edge edge_ff = graphModel.factory().newEdge(nodes.get(friend_uid), nodes.get(ff_uid));
+                undirectedGraph.addEdge(edge_ff);
+            }
         }
-       
-        
-        System.out.println(edges.size());
+    }
+
+    protected void addNode(Long uid, String name) {
+        // Add Node
+        Node node = nodes.get(uid);
+        if (node == null) {
+            node = graphModel.factory().newNode(); //Long.toString(friend_uid));
+            nodes.put(uid, node);
+            undirectedGraph.addNode(node);
+        }
+        if (name != null) {
+            node.getNodeData().setLabel(name);
+        }
     }
     
     // Abstract methods -- required to be implemented by subclasses
@@ -138,7 +102,7 @@ public abstract class App implements Runnable
      * @throws UnknownHostException
      */
     public App(final String s) throws UnknownHostException {
-        this.user_id = s;
+        this.facebook_profile_id = new ObjectId(s);
         
         String mongo_url = (new YamlConfig("mongo.yml")).propertiesForCurrentEnv().getProperty("uri");
         MongoURI mongoURI = new MongoURI(mongo_url);
@@ -153,20 +117,19 @@ public abstract class App implements Runnable
                 return;
             }
         }
-        this.fb_profiles = db.getCollection("facebook_profiles");
+        this.fb_profiles_collection    = db.getCollection("facebook_profiles");
         
-        BasicDBObject query = new BasicDBObject();
-        query.put("user_id", new ObjectId(this.user_id));
+        BasicDBObject query = new BasicDBObject("_id", this.facebook_profile_id);
         
-        DBCursor cursor = fb_profiles.find(query);
-        
-        try {
-            this.fb_profile = cursor.next();
-            this.userName = this.fb_profile.get("name").toString();
-            this.userUid = Long.valueOf(this.fb_profile.get("uid").toString());
+        this.fb_profile = this.fb_profiles_collection.findOne(query);
+        if (this.fb_profile == null) {
+            System.out.println("Could not find record in facebook_profiles or users collection with facebook_profile_id: "+this.facebook_profile_id);
+            return;
         }
-        catch(java.util.NoSuchElementException e) {
-            System.out.println("Could not find record in facebook_profiles or users collection with user_id: "+this.user_id);
-        }
+        
+        this.fb_name = (String)  this.fb_profile.get("name");
+
+//        this.fb_uid  = (Long)this.fb_profile.get("uid");
+        this.fb_uid  = ((Number)this.fb_profile.get("uid")).longValue();
     }
 }
