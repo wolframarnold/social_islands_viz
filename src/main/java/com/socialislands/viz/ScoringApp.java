@@ -31,7 +31,7 @@ class PhotoActionStat{
     public String actionName;
     public Map actionMap;
     public Map actionNameMap;
-    void photoStat(){
+    void photoActionStat(){
         numPhotoTagged =0;
         numActions = 0;
         actionMap = new HashMap<Long, Integer>();

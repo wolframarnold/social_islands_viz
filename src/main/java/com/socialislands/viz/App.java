@@ -57,6 +57,7 @@ public abstract class App implements Runnable
         
         Iterator itr = friends.iterator(); 
         BasicDBObject friend = new BasicDBObject();
+        friendHash = new HashMap();
         int idx = 0;
         while(itr.hasNext()) {
             friend = (BasicDBObject) itr.next(); 
@@ -129,6 +130,7 @@ public abstract class App implements Runnable
     protected abstract void generateResult();
 
     protected  abstract void exportToMongo();
+    protected  abstract void exportToFile();
     
     public abstract void run();
     

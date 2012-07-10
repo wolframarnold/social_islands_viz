@@ -416,6 +416,26 @@ public class VizApp extends App
  	this.fb_profiles.update(query, updateCmd);
     }
     
+    @Override
+    protected void exportToFile() {
+        //Export only visible graph -- to string buffer, then to Mongo as "graph" attribute on Facebook profile record.
+        
+        ExportController ec = Lookup.getDefault().lookup(ExportController.class);
+        GraphExporter exporter = (GraphExporter) ec.getExporter("gexf");     //Get GEXF exporter
+        exporter.setExportVisible(true);  //Only exports the visible (filtered) graph
+        exporter.setWorkspace(workspace);
+    
+        try{
+            ec.exportFile(new File("fb_graph.gexf"));
+        }catch (IOException ex){
+            ex.printStackTrace();
+            return;
+        }
+        
+        System.out.println("Graph exported");
+        
+    }
+    
     // make an HTTP Post with the facebook profile id to the frontend
     // which notifies it that the graph is ready
     private void notifyFrontend() {
@@ -461,6 +481,7 @@ public class VizApp extends App
         generateResult();
         
         System.out.println("Start export graph...");
+//        exportToFile();
         exportToMongo();
         System.out.println("Pinging frontend");
         notifyFrontend();

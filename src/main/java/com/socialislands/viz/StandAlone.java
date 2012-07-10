@@ -29,12 +29,15 @@ public class StandAlone {
     //        VizApp vizapp = new VizApp("4f63c7633f033175fe000007"); //Weidong
     //        VizApp vizapp = new VizApp("4f567b699881b47c29000001");  //Wolf
     //          VizApp vizapp = new VizApp("4fa7180e5a8513000a000003");  //Janet      Has friend in edge list but not on node list
-    //          VizApp vizapp = new VizApp("4fa7509700d7ed0007000001");  //Pieter Dubois  Has one friend
+//              VizApp vizapp = new VizApp("4fdd6ddba074560007000005"); //Julia
+              VizApp vizapp = new VizApp("4fdc1d8915b39f0007000005"); //Laura
+              
+              
     //          VizApp vizapp = new VizApp("4fa847368578760007000001");  
-    //            vizapp.run();
+                vizapp.run();
     //            ScoringApp scoringapp = new ScoringApp("4f63c6e23f033175fe000004"); //Wolf
-            ScoringApp scoringapp = new ScoringApp("4f91c5d4a3f1ec0003000001");
-              scoringapp.runLocalTest();
+//            ScoringApp scoringapp = new ScoringApp("4f91c5d4a3f1ec0003000001");
+//              scoringapp.runLocalTest();
     //            runBatchScoring();
 //        testScoring();
     }
