@@ -339,9 +339,8 @@ public class VizApp extends App
     private void notifyFrontend() {
         
         HttpClient httpclient = new DefaultHttpClient();
-        String notify_url = (new YamlConfig("frontend_server.yml")).propertiesForCurrentEnv().getProperty("uri");
         
-        HttpPost post = new HttpPost(notify_url);
+        HttpPost post = new HttpPost(this.postbackUrl);
 
         List<NameValuePair> data = new ArrayList<NameValuePair>(1);
         data.add(new BasicNameValuePair("facebook_profile_id", this.facebook_profile_id.toString()));
@@ -390,7 +389,7 @@ public class VizApp extends App
      * @param s
      * @throws UnknownHostException
      */
-    public VizApp(final String s) throws UnknownHostException {
-        super(s);
+    public VizApp(final String s, final String url) throws UnknownHostException {
+        super(s, url);
     }
 }

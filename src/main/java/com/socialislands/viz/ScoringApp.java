@@ -23,6 +23,7 @@ import org.gephi.project.api.ProjectController;
 import org.gephi.statistics.plugin.ClusteringCoefficient;
 import org.openide.util.Lookup;
 
+
 /**
  *
  * @author weidongyang
@@ -42,7 +43,6 @@ public class ScoringApp extends App
     private double kCoreMean;
     private double kCoreLower;
     private double kCoreUpper;
-    private String postbackUrl;
     
     @Override
     protected void generateResult() {
@@ -181,23 +181,11 @@ public class ScoringApp extends App
         
     }
     
-    /**
-     * 
-     * @param s
-     * @throws UnknownHostException
-     */
     public ScoringApp(final String facebook_profile_id, final String url) throws UnknownHostException {
-        super(facebook_profile_id);
-        this.postbackUrl = url;
+        super(facebook_profile_id, url);
     }
 
-    public ScoringApp(final String facebook_profile_id) throws UnknownHostException {
-        super(facebook_profile_id);
-        this.postbackUrl = "";
-    }
-    
 }
-
 class MyTable{
     
     public MyTable(){   

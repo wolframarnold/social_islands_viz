@@ -34,6 +34,7 @@ public abstract class App implements Runnable
     protected HashMap<Long,Node> nodes;
     protected Long fb_uid;
     protected DB db;
+    protected String postbackUrl;
     
     protected void mongoDB2Graph()  throws Exception {
         pc = Lookup.getDefault().lookup(ProjectController.class);
@@ -101,8 +102,9 @@ public abstract class App implements Runnable
      * @param s
      * @throws UnknownHostException
      */
-    public App(final String s) throws UnknownHostException {
+    public App(final String s, final String url) throws UnknownHostException {
         this.facebook_profile_id = new ObjectId(s);
+        this.postbackUrl = url;
         
         String mongo_url = (new YamlConfig("mongo.yml")).propertiesForCurrentEnv().getProperty("uri");
         MongoURI mongoURI = new MongoURI(mongo_url);
