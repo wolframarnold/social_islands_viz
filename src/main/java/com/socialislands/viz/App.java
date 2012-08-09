@@ -48,7 +48,17 @@ public abstract class App implements Runnable
         nodes = new HashMap<Long,Node>();
         
         BasicDBList friend_ids = (BasicDBList) this.fb_profile.get("facebook_profile_uids");
-
+        //set up a HashSet to hold friend ids, later each friend's friend will be checked against this list.
+        Set<Long> friend_ids_set = new HashSet<Long>();
+        
+        Iterator f_itr = friend_ids.iterator();
+        while (f_itr.hasNext()){
+            long f_uid = ((Number)f_itr.next()).longValue();
+            friend_ids_set.add(f_uid);
+        }
+        System.out.println("number of unique friends: " + friend_ids_set.size());
+        
+        
         BasicDBObject query = new BasicDBObject();
         query.put("uid", new BasicDBObject("$in", friend_ids));
         DBCursor cursor = this.fb_profiles_collection.find(query);
@@ -69,10 +79,12 @@ public abstract class App implements Runnable
             Iterator ff_itr = friends_friend_ids.iterator();
             while(ff_itr.hasNext()) {
                 Long ff_uid = ((Number)ff_itr.next()).longValue();
-                addNode(ff_uid, null);
-                // We wind up adding the edge twice, once from each direction, but that's OK
-                Edge edge_ff = graphModel.factory().newEdge(nodes.get(friend_uid), nodes.get(ff_uid));
-                undirectedGraph.addEdge(edge_ff);
+                if(friend_ids_set.contains(ff_uid)){
+                    addNode(ff_uid, null);
+                    // We wind up adding the edge twice, once from each direction, but that's OK
+                    Edge edge_ff = graphModel.factory().newEdge(nodes.get(friend_uid), nodes.get(ff_uid));
+                    undirectedGraph.addEdge(edge_ff);
+                }
             }
         }
     }
