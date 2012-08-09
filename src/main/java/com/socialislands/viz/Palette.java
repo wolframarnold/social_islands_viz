@@ -14,15 +14,17 @@ public class Palette {
 //    static String[] roseindia={"chanan","tapan","Amar","santosh","deepak"};
   
     static Color colors[] = {
-        new Color(0xFFFF66),
-        new Color(0xB3FF66),
-        new Color(0x66FFB3),
-        new Color(0xFFB366),
-        new Color(0x66FFFF),
-        new Color(0xFF6666),
-        new Color(0x66B3FF),
-        new Color(0xFF66FF),
-        new Color(0xFF2929),
+        new Color(0xFF2929),    //deep red
+        new Color(0xFFFF66),    //yellow
+        new Color(0x2929FF),    //deep blue
+        new Color(0xB3FF66),    //lemon green
+        new Color(0xFFB366),    //amber
+        new Color(0x66FFFF),    //cyan
+        new Color(0xFF6666),    //light red 
+        new Color(0x66FFB3),    //young blue
+        new Color(0xFF66FF),    //magenta
+        new Color(0x29FF29),    //deep green
+        new Color(0x66B3FF),    //purple
         new Color(0xFFFFFF),  // TODO: fill these in with better colors
         new Color(0xFFFFFF),
         new Color(0xFFFFFF),
