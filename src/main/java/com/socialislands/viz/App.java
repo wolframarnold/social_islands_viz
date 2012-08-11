@@ -106,6 +106,7 @@ public abstract class App implements Runnable
     protected abstract void generateResult();
 
     protected  abstract void exportToMongo();
+    protected  abstract void exportToPNG();
     
     public abstract void run();
     
