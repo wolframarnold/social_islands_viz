@@ -21,6 +21,7 @@ import org.gephi.graph.api.Node;
 import org.gephi.graph.api.UndirectedGraph;
 import org.gephi.io.exporter.api.ExportController;
 import org.gephi.io.exporter.spi.GraphExporter;
+import org.gephi.io.exporter.preview.PNGExporter;
 import org.gephi.layout.plugin.forceAtlas2.ForceAtlas2;
 import org.gephi.layout.plugin.forceAtlas2.ForceAtlas2Builder;
 import org.gephi.preview.api.PreviewController;
@@ -309,12 +310,7 @@ public class VizApp extends App
 
         // Note: There is a 16MB per record limit in Mongo. With some profiles
         // we've exeeded this (e.g. David Sifry)
-//        try {
-//            ec.exportFile(new File("graph.gexf"), exporter);
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//        }
-
+        
         BasicDBObject fields = new BasicDBObject();
         fields.put("gexf", result);
         // TODO: WARNING -- THIS WILL WIPE OUT EXISTING LABELS!!!
@@ -334,6 +330,51 @@ public class VizApp extends App
         }
     }
     
+    @Override
+    protected void exportToPNG() {
+            //creating png file
+        //1st flip vertically, to match the visual with sigma.js
+        for (Node n : graphModel.getGraph().getNodes()){
+            float val = -n.getNodeData().y();
+            n.getNodeData().setY(val);
+        }
+
+        //2nd rescale the size to match sigma.js 
+        AttributeModel attributeModel = Lookup.getDefault().lookup(AttributeController.class).getModel();
+        RankingController rankingController = Lookup.getDefault().lookup(RankingController.class); 
+        AttributeColumn centralityColumn = attributeModel.getNodeTable().getColumn(GraphDistance.BETWEENNESS);      
+        Ranking centralityRanking = rankingController.getModel().getRanking(Ranking.NODE_ELEMENT, centralityColumn.getId());
+   
+        AbstractSizeTransformer sizeTransformer = (AbstractSizeTransformer) rankingController.getModel().getTransformer(Ranking.NODE_ELEMENT, Transformer.RENDERABLE_SIZE);
+        sizeTransformer.setMinSize(new Float(4));
+        sizeTransformer.setMaxSize(new Float(15));
+        rankingController.transform(centralityRanking,sizeTransformer);
+
+        PreviewModel model = Lookup.getDefault().lookup(PreviewController.class).getModel();
+        model.getProperties().putValue(PreviewProperty.BACKGROUND_COLOR, Color.BLACK);
+        model.getProperties().putValue(PreviewProperty.SHOW_NODE_LABELS, Boolean.FALSE);
+        model.getProperties().putValue(PreviewProperty.NODE_BORDER_WIDTH, new Float(0.0f));
+        model.getProperties().putValue(PreviewProperty.EDGE_COLOR, new EdgeColor(EdgeColor.Mode.SOURCE));
+        model.getProperties().putValue(PreviewProperty.EDGE_THICKNESS, new Float(0.2f));
+        model.getProperties().putValue(PreviewProperty.EDGE_OPACITY, new Float(80.0f));
+        
+        model.getProperties().putValue(PreviewProperty.NODE_LABEL_FONT, model.getProperties().getFontValue(PreviewProperty.NODE_LABEL_FONT).deriveFont(8));
+       
+        File f=new File("graph.png");
+        ExportController ec = Lookup.getDefault().lookup(ExportController.class);
+        PNGExporter pngExporter = (PNGExporter) ec.getFileExporter(f);
+//        pngExporter.setExportVisible(true);  //Only exports the visible (filtered) graph
+        pngExporter.setWorkspace(workspace);
+        pngExporter.setWidth(800);
+        pngExporter.setHeight(600);
+        try {
+            ec.exportFile(f, pngExporter);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        //done exporting to png file
+        
+    }
     // make an HTTP Post with the facebook profile id to the frontend
     // which notifies it that the graph is ready
     private void notifyFrontend() {
@@ -379,6 +420,7 @@ public class VizApp extends App
         
         System.out.println("Start export graph...");
         exportToMongo();
+        exportToPNG();
         System.out.println("Pinging frontend");
         notifyFrontend();
         System.out.println("Done...");
