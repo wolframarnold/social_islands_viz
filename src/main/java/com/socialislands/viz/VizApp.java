@@ -330,24 +330,40 @@ public class VizApp extends App
         }
     }
     
-    @Override
-    protected void exportToPNG() {
-            //creating png file
-        //1st flip vertically, to match the visual with sigma.js
+    private void validateGraphOrientation(){
         float xmin=100, xmax=-100, ymin=100, ymax=-100;
         for (Node n : graphModel.getGraph().getNodes()){
-            float y = -n.getNodeData().y();
-            n.getNodeData().setY(y);
             float x = n.getNodeData().x();
+            float y = n.getNodeData().y();
             if(x<xmin) xmin=x;
             if(x>xmax) xmax=x;
             if(y<ymin) ymin=y;
             if(y>ymax) ymax=y;
         }
-        System.out.println("xmin:"+xmin+" xmax:"+xmax+" xrange:"+(xmax-xmin));
-        System.out.println("ymin:"+ymin+" ymax:"+ymax+" yrange:"+(ymax-ymin));
+        float xrange = xmax-xmin;
+        float yrange = ymax-ymin;
+        System.out.println("xmin:"+xmin+" xmax:"+xmax+" xrange:"+xrange);
+        System.out.println("ymin:"+ymin+" ymax:"+ymax+" yrange:"+yrange);
+        if(yrange>xrange){ //yrange should be smaller than xrange, switch coordinates
+            for (Node n : graphModel.getGraph().getNodes()){
+                float x = n.getNodeData().x();
+                float y = n.getNodeData().y();
+                n.getNodeData().setY(x);
+                n.getNodeData().setX(y);
+            }
+            System.out.println("===================X, Y flipped=====================");
+        }
         
-
+    }
+    @Override
+    protected void exportToPNG() {
+            //creating png file
+        //1st flip vertically, to match the visual with sigma.js
+        for (Node n : graphModel.getGraph().getNodes()){
+            float y = -n.getNodeData().y();
+            n.getNodeData().setY(y);
+        }
+        
         //2nd rescale the size to match sigma.js 
         AttributeModel attributeModel = Lookup.getDefault().lookup(AttributeController.class).getModel();
         RankingController rankingController = Lookup.getDefault().lookup(RankingController.class); 
@@ -446,6 +462,7 @@ public class VizApp extends App
         generateResult();
         
         System.out.println("Start export graph...");
+        validateGraphOrientation();
         exportToMongo();
         exportToPNG();
         System.out.println("Pinging frontend");
