@@ -334,10 +334,19 @@ public class VizApp extends App
     protected void exportToPNG() {
             //creating png file
         //1st flip vertically, to match the visual with sigma.js
+        float xmin=100, xmax=-100, ymin=100, ymax=-100;
         for (Node n : graphModel.getGraph().getNodes()){
-            float val = -n.getNodeData().y();
-            n.getNodeData().setY(val);
+            float y = -n.getNodeData().y();
+            n.getNodeData().setY(y);
+            float x = n.getNodeData().x();
+            if(x<xmin) xmin=x;
+            if(x>xmax) xmax=x;
+            if(y<ymin) ymin=y;
+            if(y>ymax) ymax=y;
         }
+        System.out.println("xmin:"+xmin+" xmax:"+xmax+" xrange:"+(xmax-xmin));
+        System.out.println("ymin:"+ymin+" ymax:"+ymax+" yrange:"+(ymax-ymin));
+        
 
         //2nd rescale the size to match sigma.js 
         AttributeModel attributeModel = Lookup.getDefault().lookup(AttributeController.class).getModel();
@@ -367,11 +376,29 @@ public class VizApp extends App
         pngExporter.setWorkspace(workspace);
         pngExporter.setWidth(800);
         pngExporter.setHeight(600);
-        try {
-            ec.exportFile(f, pngExporter);
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ec.exportStream(baos, pngExporter);
+        byte[] png = baos.toByteArray();
+        try{
+            FileOutputStream fos = new FileOutputStream("graph.png");
+            fos.write(png);
+            fos.close();
+        }catch(FileNotFoundException ex)
+        {
+            System.out.println("FileNotFoundException : " + ex);
         }
+        catch(IOException ioe)
+        {
+            System.out.println("IOException : " + ioe);
+        }
+        
+//        try {
+//            ec.exportFile(f, pngExporter);
+//            
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
         //done exporting to png file
         
     }
