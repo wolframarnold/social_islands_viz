@@ -385,9 +385,8 @@ public class VizApp extends App
         
         model.getProperties().putValue(PreviewProperty.NODE_LABEL_FONT, model.getProperties().getFontValue(PreviewProperty.NODE_LABEL_FONT).deriveFont(8));
        
-        File f=new File("graph.png");
         ExportController ec = Lookup.getDefault().lookup(ExportController.class);
-        PNGExporter pngExporter = (PNGExporter) ec.getFileExporter(f);
+        PNGExporter pngExporter = (PNGExporter) ec.getExporter("png");
 //        pngExporter.setExportVisible(true);  //Only exports the visible (filtered) graph
         pngExporter.setWorkspace(workspace);
         pngExporter.setWidth(800);
