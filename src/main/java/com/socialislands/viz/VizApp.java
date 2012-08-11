@@ -58,6 +58,7 @@ import org.gephi.filters.plugin.graph.KCoreBuilder;
 public class VizApp extends App
 {
     private ArrayList<BasicDBObject> labels_for_mongo = new ArrayList<BasicDBObject>();
+    private DBCollection fb_graph_collection;
    
     @Override
     protected void generateResult() {
@@ -316,7 +317,7 @@ public class VizApp extends App
         // TODO: WARNING -- THIS WILL WIPE OUT EXISTING LABELS!!!
         fields.put("labels", labels_for_mongo);
 
-        DBCollection fb_graph_collection = db.getCollection("facebook_graphs");
+        this.fb_graph_collection = db.getCollection("facebook_graphs");
         
         BasicDBObject query = new BasicDBObject("facebook_profile_id", this.facebook_profile_id);
         DBObject fb_graph = fb_graph_collection.findOne(query);
@@ -355,7 +356,7 @@ public class VizApp extends App
         }
         
     }
-    @Override
+
     protected void exportToPNG() {
             //creating png file
         //1st flip vertically, to match the visual with sigma.js
@@ -394,6 +395,14 @@ public class VizApp extends App
         
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ec.exportStream(baos, pngExporter);
+
+        BasicDBObject fields = new BasicDBObject();
+        fields.put("png", baos.toByteArray());
+
+        BasicDBObject query = new BasicDBObject("facebook_profile_id", this.facebook_profile_id);
+        BasicDBObject updateCmd = new BasicDBObject("$set", fields);
+        this.fb_graph_collection.update(query, updateCmd);
+        
         byte[] png = baos.toByteArray();
         try{
             FileOutputStream fos = new FileOutputStream("graph.png");
@@ -420,6 +429,10 @@ public class VizApp extends App
     // make an HTTP Post with the facebook profile id to the frontend
     // which notifies it that the graph is ready
     private void notifyFrontend() {
+        
+        if (this.postbackUrl==null || this.postbackUrl=="") {
+            return;
+        }
         
         HttpClient httpclient = new DefaultHttpClient();
         
