@@ -46,7 +46,7 @@ public abstract class App implements Runnable
         graphModel = Lookup.getDefault().lookup(GraphController.class).getModel();
         undirectedGraph = graphModel.getUndirectedGraph();
         nodes = new HashMap<Long,Node>();
-        
+
         BasicDBList friend_ids = (BasicDBList) this.fb_profile.get("facebook_profile_uids");
         //set up a HashSet to hold friend ids, later each friend's friend will be checked against this list.
         Set<Long> friend_ids_set = new HashSet<Long>();
@@ -93,7 +93,7 @@ public abstract class App implements Runnable
         // Add Node
         Node node = nodes.get(uid);
         if (node == null) {
-            node = graphModel.factory().newNode(); //Long.toString(friend_uid));
+            node = graphModel.factory().newNode(Long.toString(uid));
             nodes.put(uid, node);
             undirectedGraph.addNode(node);
         }
