@@ -430,23 +430,17 @@ public class VizApp extends App {
         BasicDBObject updateCmd = new BasicDBObject("$set", fields);
         this.fb_graph_collection.update(query, updateCmd);
 
-        byte[] png = baos.toByteArray();
-        try {
-            FileOutputStream fos = new FileOutputStream("graph.png");
-            fos.write(png);
-            fos.close();
-        } catch (FileNotFoundException ex) {
-            System.out.println("FileNotFoundException : " + ex);
-        } catch (IOException ioe) {
-            System.out.println("IOException : " + ioe);
-        }
-
+//        byte[] png = baos.toByteArray();
 //        try {
-//            ec.exportFile(f, pngExporter);
-//            
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
+//            FileOutputStream fos = new FileOutputStream("graph.png");
+//            fos.write(png);
+//            fos.close();
+//        } catch (FileNotFoundException ex) {
+//            System.out.println("FileNotFoundException : " + ex);
+//        } catch (IOException ioe) {
+//            System.out.println("IOException : " + ioe);
 //        }
+
         //done exporting to png file
 
     }
