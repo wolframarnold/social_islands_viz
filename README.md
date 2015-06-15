@@ -1,6 +1,8 @@
 Social Islands Viz
 ==================
 
+Copyright 2012-2015 by Wolfram Arnold & Weidong Yang. All rights reserved. Released under BSD license.
+
 This project is the visualization backend for the Social Islands application, which lets
 Facebook users visualize their friend network.
 
